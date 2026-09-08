@@ -1,0 +1,300 @@
+/* Navbar */
+.navbar {
+  background: var(--white);
+  border-bottom: 1px solid var(--line-strong);
+  height: 69px;
+  display: flex;
+  align-items: center;
+  padding: 0 22px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.navbar-logo { display: flex; align-items: center; margin-right: 40px; flex-shrink: 0; }
+.navbar-logo img { height: 28px; width: auto; }
+.navbar-wordmark {
+  font-family: var(--font-display); font-weight: 900; font-size: 20px;
+  color: #033162; letter-spacing: 0; margin-left: 10px; white-space: nowrap;
+}
+.navbar-menu { display: flex; align-items: center; gap: 24px; font-family: var(--font-display); font-size: 18px; font-weight: 900; }
+.navbar-menu > a { text-decoration: none; color: #141414; padding: 4px 2px; border-bottom: 2px solid transparent; }
+.navbar-menu > a.active, .navbar-menu > a:hover { color: var(--accent); border-bottom-color: var(--accent); }
+.navbar-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.navbar-icon-btn { width: 28px; height: 28px; border-radius: 0; border: 0; background: transparent; display: flex; align-items: center; justify-content: center; }
+.navbar-icon-btn img { width: 100%; height: 100%; }
+.navbar-toggle {
+  display: none; width: 34px; height: 34px; border: 1.5px solid var(--line-strong); background: #fff;
+  border-radius: var(--button-radius); font-size: 18px; color: #141414; margin-left: 8px;
+}
+/* Chevron icon — reused (via rotation) for every caret/arrow in the app;
+   traced from essentiallysports-design-tools' own profile-chevron SVG
+   (site-chrome.js) rather than an ad-hoc glyph. */
+.icon-chevron { width: 11px; height: 7px; flex-shrink: 0; }
+.icon-chevron path { stroke: currentColor; }
+
+/* Mega-menu dropdowns (Sports, Case Studies) — native <details>, hover-driven via JS */
+.nav-dropdown { position: relative; }
+.nav-dropdown > summary, .nav-subdetails > summary {
+  list-style: none; cursor: pointer; display: flex; align-items: center; gap: 5px;
+  color: #141414; padding: 4px 2px; border-bottom: 2px solid transparent;
+}
+.nav-dropdown > summary::-webkit-details-marker, .nav-subdetails > summary::-webkit-details-marker { display: none; }
+.nav-dropdown[open] > summary { color: var(--accent); border-bottom-color: var(--accent); }
+.nav-caret { transition: transform .15s var(--motion-standard); }
+.nav-dropdown[open] > summary .nav-caret { transform: rotate(180deg); }
+
+.nav-panel {
+  position: absolute; top: calc(100% + 14px); left: 0; z-index: 200;
+  background: #fff; border-radius: 12px; box-shadow: 0 15px 40px rgba(6,17,31,.16);
+  padding: 22px 26px; font-family: var(--font-ui);
+}
+.nav-panel h3 { font-family: var(--font-display); font-weight: 900; font-size: 19px; color: #111; margin-bottom: 16px; }
+.nav-panel-grid { display: grid; grid-template-columns: repeat(3, minmax(140px, 1fr)); gap: 22px 32px; }
+.nav-panel-col { display: flex; flex-direction: column; gap: 14px; }
+.nav-panel-col > a, .nav-panel-col > details > summary { font-size: 15px; font-weight: 400; color: #111; text-decoration: none; }
+.nav-panel-col > a:hover, .nav-panel-col > details > summary:hover { color: var(--accent); }
+
+.nav-single-col { display: flex; flex-direction: column; gap: 14px; min-width: 160px; }
+
+.nav-subdetails { position: relative; }
+.nav-subdetails > summary { font-size: 15px; }
+.nav-chev-right { transform: rotate(-90deg); }
+
+.side-flyout {
+  position: absolute; left: calc(100% + 14px); top: -22px; z-index: 210;
+  background: #fff; border-radius: 12px; box-shadow: 0 15px 40px rgba(6,17,31,.16);
+  padding: 20px 22px;
+}
+.case-flyout { min-width: 170px; display: flex; flex-direction: column; gap: 12px; white-space: nowrap; }
+.case-flyout a { font-size: 14px; color: #111; text-decoration: none; }
+.case-flyout a:hover { color: var(--accent); }
+
+.nfl-flyout { width: 480px; }
+.nfl-all-news { display: block; font-size: 14px; font-weight: 800; color: var(--accent); text-decoration: none; margin-bottom: 16px; }
+.nfl-divisions { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 24px; }
+.nfl-division { min-width: 0; }
+.division-label { font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: #7997B8; margin-bottom: 7px; }
+.pill-row { display: flex; flex-wrap: wrap; gap: 5px; }
+.team-pill {
+  display: inline-block; font-family: var(--font-display); font-weight: 900; font-size: 11.5px;
+  text-transform: uppercase; padding: 5px 8px; text-decoration: none; line-height: 1.1;
+}
+
+/* Mobile nav (PRD §14 — Mobile-first UI) — below 680px the inline mega-menu
+   becomes a hamburger-toggled full-width column; nested panels go static
+   (stacked) instead of absolutely-positioned flyouts, which would run off
+   a narrow viewport. */
+@media (max-width: 680px) {
+  .navbar-toggle { display: block; }
+  .navbar-menu {
+    display: none; position: absolute; top: 100%; left: 0; right: 0;
+    flex-direction: column; align-items: stretch; gap: 0; background: #fff;
+    border-bottom: 1px solid var(--line-strong); box-shadow: 0 12px 24px rgba(6,17,31,.1);
+    max-height: calc(100vh - 69px); overflow-y: auto; padding: 6px 0;
+  }
+  .navbar-menu.open { display: flex; }
+  .navbar-menu > a, .nav-dropdown > summary { padding: 14px 22px; border-bottom: 1px solid var(--line) !important; }
+  .nav-panel, .side-flyout {
+    position: static; box-shadow: none; border-top: 1px solid var(--line);
+    border-radius: 0; width: auto !important; margin: 0; padding: 16px 22px;
+  }
+  .nav-panel-grid, .nfl-divisions { grid-template-columns: 1fr; }
+  .navbar-right { display: none; }
+}
+
+/* Page shell */
+.page { max-width: 1180px; margin: 0 auto; padding: 28px 20px 80px; }
+
+/* Footer — two-toned: blue hero band on top, white body below (site-chrome.css pattern) */
+.site-footer { background: #FFFFFF; font-family: var(--font-ui); }
+.footer-hero { padding: 44px 24px 28px; background: #0A7DFA; color: #fff; text-align: center; }
+.footer-logo-link { display: inline-block; }
+.footer-logo-img { height: clamp(28px, 5vw, 40px); margin: 0 auto; }
+.footer-blurb { width: min(760px, 100%); margin: 16px auto 20px; color: #fff; font-size: 14px; line-height: 1.45; }
+.footer-socials { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 18px; }
+.footer-socials img { width: 22px; height: 22px; }
+.footer-copy { color: #fff; font-size: 13px; font-weight: 700; opacity: .95; }
+
+.footer-links {
+  width: min(1160px, calc(100% - 48px));
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 36px;
+  margin: 0 auto; padding: 34px 0 40px;
+}
+.footer-col { display: flex; flex-direction: column; gap: 9px; color: #111; font-size: 14px; }
+.footer-col > span { font-size: 15px; font-weight: 800; color: #033162; margin-bottom: 2px; }
+.footer-col a { color: #111; text-decoration: none; }
+.footer-col a:hover { color: #0A7DFA; }
+.footer-col.sports { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); column-gap: 20px; row-gap: 9px; }
+.footer-col.sports > span:first-child { grid-column: 1 / -1; }
+
+.footer-bottom {
+  width: min(1160px, calc(100% - 48px));
+  display: flex; flex-wrap: wrap; gap: 12px 22px;
+  margin: 0 auto; padding: 20px 0 28px; border-top: 1px solid #dce4ed;
+  font-size: 12px; color: #7997B8;
+}
+.footer-bottom a { text-decoration: none; color: #7997B8; }
+.footer-bottom a:hover { color: #0A7DFA; }
+@media (max-width: 720px) { .footer-links { grid-template-columns: 1fr 1fr; } }
+
+/* Schedule Hub controls — sized and colored for a 50+ audience: larger
+   text floor (15px+), bigger tap targets (44px+), and a tighter palette
+   that reserves color for meaning rather than decoration. */
+.hub-header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+.hub-title { font-family: var(--font-display); font-weight: 900; font-size: clamp(28px, 4vw, 40px); color: var(--text-navy); line-height: 1; }
+.hub-sub { color: var(--hub-text-muted); font-size: 15px; margin-top: 6px; }
+
+.hub-controls { display: flex; align-items: center; gap: 10px; }
+.team-filter-select {
+  min-height: 44px; border: 1.5px solid var(--line-strong); border-radius: 999px; background: var(--bg-panel);
+  color: var(--text-navy); font-family: var(--font-ui); font-weight: 700; font-size: 15px; padding: 0 18px;
+}
+
+.view-toggle { display: flex; gap: 10px; margin-bottom: 22px; }
+.view-toggle button {
+  min-height: 44px; border: 1.5px solid var(--line-strong); background: var(--bg-panel); color: var(--text-navy);
+  border-radius: 999px; padding: 0 20px; font-family: var(--font-ui); font-weight: 700; font-size: 15px;
+}
+.view-toggle button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* Week stepper — one big "Week N" label, two large prev/next buttons,
+   and a plain jump-to-week select. Simpler to scan and tap than a strip
+   of small tiles. */
+.week-nav { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+.step-lg {
+  flex: 0 0 auto; width: 48px; height: 48px; border: 1.5px solid var(--line-strong); background: var(--bg-panel);
+  border-radius: var(--button-radius); color: var(--accent); display: flex; align-items: center; justify-content: center;
+}
+.step-lg:hover { border-color: var(--accent); }
+.step-lg .icon-chevron { width: 11px; height: 17px; }
+.week-stepper-label { text-align: center; min-width: 170px; }
+.week-stepper-num { display: block; font-family: var(--font-display); font-weight: 900; font-size: 24px; color: var(--text-navy); line-height: 1.1; }
+.week-stepper-range { display: block; font-size: 15px; color: var(--hub-text-muted); margin-top: 2px; }
+.week-jump {
+  margin-left: auto; min-height: 44px; border: 1.5px solid var(--line-strong); border-radius: var(--button-radius);
+  background: var(--bg-panel); color: var(--text-navy); font-family: var(--font-ui); font-weight: 700; font-size: 15px; padding: 0 16px;
+}
+
+/* Full Season — a plain list of weeks, not a wall of 288 cards */
+.week-list { display: flex; flex-direction: column; gap: 10px; }
+.week-list-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 56px;
+  padding: 14px 20px; border: 1.5px solid var(--line-strong); border-radius: var(--radius-md);
+  background: var(--bg-panel); font-family: var(--font-ui); cursor: pointer; text-align: left; width: 100%;
+}
+.week-list-row:hover { border-color: var(--accent); }
+.week-list-row .wl-left { display: flex; align-items: baseline; gap: 12px; }
+.week-list-row .wl-num { font-family: var(--font-display); font-weight: 900; font-size: 18px; color: var(--text-navy); }
+.week-list-row .wl-range { font-size: 14px; color: var(--hub-text-muted); }
+.week-list-row .wl-count { font-size: 14px; color: var(--hub-text-muted); }
+
+/* Week groups — label with a trailing rule to its right, not a
+   full-width line underneath */
+.week-group { margin-bottom: 34px; }
+.week-group-heading {
+  display: flex; align-items: center; gap: 14px;
+  font-family: var(--font-display); font-weight: 900; font-size: 20px; color: var(--text-navy);
+  margin-bottom: 14px;
+}
+.week-group-heading::after { content: ""; flex: 1; height: 2px; background: var(--line); }
+.week-range { font-size: 14px; font-weight: 400; color: var(--hub-text-muted); font-family: var(--font-ui); }
+.date-heading {
+  display: flex; align-items: center; gap: 12px;
+  font-family: var(--font-heading); font-weight: 700; font-size: 14px; letter-spacing: .04em;
+  text-transform: uppercase; color: var(--hub-text-muted); margin-bottom: 12px;
+}
+.date-heading::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.game-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+
+/* Game card (PRD §6 — single shared component for Hub + embeds) */
+.game-card-v1 {
+  background: var(--bg-panel); border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg); padding: 20px;
+}
+.card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.status-badge {
+  font-family: var(--font-ui); font-weight: 800; font-size: 13px; letter-spacing: .02em; text-transform: uppercase;
+  padding: 5px 12px; border-radius: 999px; display: inline-flex; align-items: center; gap: 6px;
+}
+.status-badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.status-scheduled { background: var(--line); color: #565F68; }
+.status-live { background: #FBE1E1; color: #B3261E; }
+.status-live::before { animation: pulse 1.4s infinite; }
+.status-final-pending { background: #F7E6C4; color: #7A5900; }
+.status-final { background: var(--line); color: var(--text-navy); }
+.status-delayed { background: #F7E6C4; color: #7A5900; }
+.status-postponed { background: #F7E6C4; color: #7A5900; }
+.status-cancelled { background: var(--line); color: #565F68; }
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.35;} }
+
+.card-meta { font-size: 14px; color: var(--hub-text-muted); font-family: var(--font-ui); }
+
+.matchup { display: flex; flex-direction: column; gap: 10px; margin: 12px 0; }
+.team-row { display: flex; align-items: center; justify-content: space-between; }
+.team-name { display: flex; align-items: center; gap: 10px; font-family: var(--font-heading); font-weight: 700; font-size: 17px; color: var(--text-navy); }
+.team-logo { width: 28px; height: 28px; object-fit: contain; flex-shrink: 0; }
+.team-score { font-family: var(--font-display); font-weight: 900; font-size: 24px; color: var(--text-navy); }
+.team-row.winner .team-score { color: var(--accent); }
+
+.card-bottom { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; font-size: 14px; color: var(--hub-text-muted); }
+.situation { font-weight: 700; color: var(--text-navy); }
+
+/* Voting (PRD §7) */
+.vote-row { display: flex; gap: 10px; margin-top: 12px; }
+.vote-btn {
+  flex: 1; min-height: 48px; border: 1.5px solid var(--line-strong); background: var(--bg-panel); color: var(--text-navy);
+  border-radius: var(--button-radius); padding: 0 10px; font-family: var(--font-ui); font-weight: 800; font-size: 16px;
+}
+.vote-btn:hover { border-color: var(--accent); color: var(--accent); }
+.vote-results { margin-top: 12px; }
+.vote-bar-row { display: grid; grid-template-columns: 78px 1fr 44px; align-items: center; gap: 10px; font-size: 15px; color: var(--hub-text-muted); margin-bottom: 8px; }
+.vote-bar-row span:last-child { text-align: right; font-weight: 800; color: var(--text-navy); }
+.vote-bar { height: 14px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.vote-bar-fill { height: 100%; border-radius: 999px; }
+.vote-bar-fill.home { background: var(--accent); }
+.vote-bar-fill.away { background: var(--line-strong); }
+.vote-total { font-size: 13px; color: var(--hub-text-muted); text-align: right; margin-top: 2px; }
+.prediction-result {
+  margin-top: 12px; font-size: 15px; font-weight: 700; color: var(--text-navy);
+  background: var(--line); border-radius: var(--radius-sm); padding: 10px 12px; text-align: center;
+}
+.prediction-result.correct { background: var(--tag-green); color: var(--tag-green-text); }
+.prediction-result.correct .check-icon { width: 15px; height: 12px; vertical-align: -1px; margin-left: 2px; }
+.prediction-result.incorrect { background: #F7E6C4; color: #7A5900; }
+
+.cta-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; background: var(--accent); color: #fff;
+  border: 1.5px solid var(--accent); border-radius: var(--button-radius); padding: 0 16px;
+  font-family: var(--font-ui); font-weight: 800; font-size: 16px; text-decoration: none;
+}
+.cta-btn:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.cta-btn.secondary { background: var(--white); color: var(--accent); }
+.cta-btn.secondary:hover { color: var(--accent-hover); border-color: var(--accent-hover); }
+.cta-btn.full { width: 100%; margin-top: 12px; }
+.cta-btn .btn-icon { width: 16px; height: 16px; flex-shrink: 0; }
+
+.empty-state { text-align: center; padding: 60px 20px; color: var(--hub-text-muted); font-family: var(--font-ui); font-size: 15px; }
+.empty-state strong { display: block; font-family: var(--font-display); font-size: 22px; color: var(--text-navy); margin-bottom: 6px; }
+
+.back-link { display: inline-flex; align-items: center; gap: 6px; color: var(--accent); text-decoration: none; font-weight: 700; font-size: 15px; margin-bottom: 18px; }
+.freshness { font-size: 14px; color: var(--hub-text-muted); text-align: center; margin-top: 8px; }
+.delay-note { background: #F7E6C4; border: 1px solid #E8CE8E; border-radius: var(--radius-md); padding: 14px; font-size: 15px; color: #6b4900; }
+
+/* Calendar chooser */
+.modal-backdrop { position: fixed; inset: 0; background: rgba(6,17,31,.4); display: none; align-items: center; justify-content: center; z-index: 200; }
+.modal-backdrop.open { display: flex; }
+.modal { background: #FFFFFF; border-radius: var(--radius-lg); padding: 24px; width: min(380px, 90vw); box-shadow: var(--shadow-lg); }
+.modal h4 { font-family: var(--font-display); font-size: 20px; color: #033162; margin-bottom: 16px; }
+.modal-option { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 48px; border: 1.5px solid var(--line-strong); background: #FFFFFF; border-radius: var(--button-radius); padding: 0 16px; margin-bottom: 10px; font-family: var(--font-ui); font-weight: 700; font-size: 16px; color: #033162; }
+.modal-option:hover { border-color: var(--accent); color: var(--accent); }
+.modal-option .icon-chevron { color: var(--hub-text-muted); }
+.modal-close { display: block; width: 100%; text-align: center; margin-top: 8px; padding: 8px; color: var(--hub-text-muted); font-size: 14px; background: none; border: none; }
+
+/* Article-embed demo scaffolding */
+.embed-block { margin-bottom: 34px; }
+.embed-tag {
+  display: inline-block; font-family: "SFMono-Regular", Consolas, monospace; font-size: 12px;
+  background: #06111F; color: #B5D8FD; padding: 6px 10px; border-radius: 6px 6px 0 0;
+}
+.embed-mount { border: 1.5px dashed var(--line-strong); border-top: none; border-radius: 0 var(--radius-md) var(--radius-md) var(--radius-md); padding: 16px; }
+.embed-mount .game-grid { max-width: 340px; }

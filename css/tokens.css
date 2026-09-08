@@ -1,0 +1,84 @@
+/* ES brand design tokens — copied from essentiallysports-design-tools
+   (project-docs/brand-design-system-master.md §3) */
+
+@font-face {
+  font-family: "FrameUp Acumin";
+  src: url("../assets/fonts/acumin-pro-condensed-black.otf") format("opentype");
+  font-style: normal;
+  font-weight: 800 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: "FrameUp Acumin";
+  src: url("../assets/fonts/acumin-pro-condensed-bold.otf") format("opentype");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "FrameUp Acumin";
+  src: url("../assets/fonts/acumin-pro-condensed-regular.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+:root {
+  --white: #FFFFFF;
+  --bg-page: #FFFFFF;
+  --bg-panel: #FFFFFF;
+  --bg-canvas: #F2F8FF;
+  --bg-canvas-soft: #F1F8FF;
+  --border: #B5D8FD;
+  --border-strong: #8CB9E8;
+  --line: #E3E6EB;
+  --line-strong: #CBD1D9;
+  --hub-text-muted: #57626D;
+  --text-primary: #111827;
+  --text-navy: #033162;
+  --text-secondary: #7997B8;
+  --accent: #0A7DFA;
+  --accent-hover: #0A6FDE;
+  --accent-light: #E8F2FF;
+  --success: #2E7D32;
+  --danger: #D90606;
+  --tag-blue-01: #B5D8FD;
+  --tag-blue-02: #DAEBFE;
+  --tag-blue-03: #E6F2FE;
+  --tag-blue-04: #EFF4F9;
+  --tag-cream: #FFF6E6;
+  --tag-green: #EAF6EE;
+  --tag-green-text: #2F6B45;
+
+  --font-ui: 'Roboto Condensed', 'Roboto', Arial, sans-serif;
+  --font-heading: 'Roboto Condensed', 'Roboto', Arial, sans-serif;
+  --font-display: "FrameUp Acumin", 'Acumin Pro Condensed', 'Arial Narrow', sans-serif;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --button-radius: 8px;
+  --shadow-sm: 0 19px 28px rgba(0,0,0,0.01);
+  --shadow-md: 0 15px 27px rgba(0,0,0,0.1);
+  --shadow-lg: 0 15px 27px rgba(0,0,0,0.1);
+  --motion-smooth: cubic-bezier(.16, 1, .3, 1);
+  --motion-standard: cubic-bezier(.22, .61, .36, 1);
+
+  --chrome-navy: #06111F;
+  --chrome-muted: #6c7a89;
+  --chrome-border: #dce4ed;
+  --chrome-soft: #f6f8fb;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; scroll-padding-top: 82px; color-scheme: light; }
+html, body {
+  background: var(--bg-page);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  min-height: 100vh;
+}
+img { max-width: 100%; display: block; }
+a { color: inherit; }
+button { font-family: inherit; cursor: pointer; }
+[hidden] { display: none !important; }
