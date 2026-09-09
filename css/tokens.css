@@ -25,7 +25,7 @@
 
 :root {
   --white: #FFFFFF;
-  --bg-page: #FFFFFF;
+  --bg-page: #E9EBEE;
   --bg-panel: #FFFFFF;
   --bg-canvas: #F2F8FF;
   --bg-canvas-soft: #F1F8FF;
@@ -55,8 +55,8 @@
   --font-display: "FrameUp Acumin", 'Acumin Pro Condensed', 'Arial Narrow', sans-serif;
 
   --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 12px;
+  --radius-md: 8px;
+  --radius-lg: 8px;
   --button-radius: 8px;
   --shadow-sm: 0 19px 28px rgba(0,0,0,0.01);
   --shadow-md: 0 15px 27px rgba(0,0,0,0.1);

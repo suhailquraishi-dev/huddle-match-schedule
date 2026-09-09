@@ -45,7 +45,7 @@
 
 .nav-panel {
   position: absolute; top: calc(100% + 14px); left: 0; z-index: 200;
-  background: #fff; border-radius: 12px; box-shadow: 0 15px 40px rgba(6,17,31,.16);
+  background: #fff; border-radius: 8px; box-shadow: 0 15px 40px rgba(6,17,31,.16);
   padding: 22px 26px; font-family: var(--font-ui);
 }
 .nav-panel h3 { font-family: var(--font-display); font-weight: 900; font-size: 19px; color: #111; margin-bottom: 16px; }
@@ -62,7 +62,7 @@
 
 .side-flyout {
   position: absolute; left: calc(100% + 14px); top: -22px; z-index: 210;
-  background: #fff; border-radius: 12px; box-shadow: 0 15px 40px rgba(6,17,31,.16);
+  background: #fff; border-radius: 8px; box-shadow: 0 15px 40px rgba(6,17,31,.16);
   padding: 20px 22px;
 }
 .case-flyout { min-width: 170px; display: flex; flex-direction: column; gap: 12px; white-space: nowrap; }
@@ -103,7 +103,26 @@
 }
 
 /* Page shell */
-.page { max-width: 1180px; margin: 0 auto; padding: 28px 20px 80px; }
+.page { max-width: 1180px; margin: 0 auto; padding: 32px 20px 80px; }
+
+/* Hero banner — stadium photo positioned to the right, with a black
+   fade over the left side so the overlaid title/text stays legible.
+   Swap the image per venue later by changing this one background-image. */
+.hero-banner {
+  position: relative; height: 260px; overflow: hidden;
+  background:
+    linear-gradient(to right, rgba(4,10,20,.95) 0%, rgba(4,10,20,.82) 30%, rgba(4,10,20,.45) 58%, rgba(4,10,20,.05) 85%),
+    url("../assets/hero/stadium-hero.jpg") center right / cover no-repeat,
+    #06111F;
+}
+.hero-banner .hero-overlay {
+  position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center;
+  max-width: 1180px; margin: 0 auto; padding: 0 20px; left: 0; right: 0;
+}
+.hero-banner .hero-eyebrow { font-family: var(--font-ui); font-weight: 700; font-size: 14px; letter-spacing: .06em; text-transform: uppercase; color: #9FC3EE; }
+.hero-banner .hero-title { font-family: var(--font-display); font-weight: 900; font-size: clamp(28px, 4vw, 42px); color: #fff; line-height: 1.05; margin-top: 6px; }
+.hero-banner .hero-sub { font-family: var(--font-ui); font-size: 16px; color: #C8DCF3; margin-top: 8px; }
+@media (max-width: 560px) { .hero-banner { height: 190px; } }
 
 /* Footer — two-toned: blue hero band on top, white body below (site-chrome.css pattern) */
 .site-footer { background: #FFFFFF; font-family: var(--font-ui); }
@@ -140,71 +159,114 @@
 /* Schedule Hub controls — sized and colored for a 50+ audience: larger
    text floor (15px+), bigger tap targets (44px+), and a tighter palette
    that reserves color for meaning rather than decoration. */
-.hub-header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
-.hub-title { font-family: var(--font-display); font-weight: 900; font-size: clamp(28px, 4vw, 40px); color: var(--text-navy); line-height: 1; }
-.hub-sub { color: var(--hub-text-muted); font-size: 15px; margin-top: 6px; }
+.hub-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin: 0 0 20px; }
+.hub-sub { color: var(--hub-text-muted); font-size: 15px; }
 
-.hub-controls { display: flex; align-items: center; gap: 10px; }
+.hub-controls { display: flex; align-items: center; gap: 12px; }
 .team-filter-select {
-  min-height: 44px; border: 1.5px solid var(--line-strong); border-radius: 999px; background: var(--bg-panel);
-  color: var(--text-navy); font-family: var(--font-ui); font-weight: 700; font-size: 15px; padding: 0 18px;
+  min-height: 44px; border: 1.5px solid var(--line-strong); border-radius: var(--button-radius); background: var(--bg-panel);
+  color: var(--text-navy); font-family: var(--font-ui); font-weight: 700; font-size: 15px; padding: 0 16px;
 }
 
-.view-toggle { display: flex; gap: 10px; margin-bottom: 22px; }
+.view-toggle { display: flex; gap: 12px; margin-bottom: 20px; }
 .view-toggle button {
   min-height: 44px; border: 1.5px solid var(--line-strong); background: var(--bg-panel); color: var(--text-navy);
-  border-radius: 999px; padding: 0 20px; font-family: var(--font-ui); font-weight: 700; font-size: 15px;
+  border-radius: var(--button-radius); padding: 0 20px; font-family: var(--font-ui); font-weight: 700; font-size: 15px;
 }
 .view-toggle button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 
-/* Week stepper — one big "Week N" label, two large prev/next buttons,
-   and a plain jump-to-week select. Simpler to scan and tap than a strip
-   of small tiles. */
-.week-nav { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
-.step-lg {
-  flex: 0 0 auto; width: 48px; height: 48px; border: 1.5px solid var(--line-strong); background: var(--bg-panel);
-  border-radius: var(--button-radius); color: var(--accent); display: flex; align-items: center; justify-content: center;
+/* Week strip — flat, borderless: six weeks visible at once as plain
+   text tabs (bold/dark = selected, muted grey = not), with simple
+   chevron arrows either side to page the window. No boxes or pills. */
+.week-nav { display: flex; align-items: center; gap: 8px; margin-bottom: 32px; }
+.week-arrow {
+  flex: 0 0 auto; width: 32px; min-height: 44px; border: none; background: none;
+  color: var(--accent); display: flex; align-items: center; justify-content: center;
 }
-.step-lg:hover { border-color: var(--accent); }
-.step-lg .icon-chevron { width: 11px; height: 17px; }
-.week-stepper-label { text-align: center; min-width: 170px; }
-.week-stepper-num { display: block; font-family: var(--font-display); font-weight: 900; font-size: 24px; color: var(--text-navy); line-height: 1.1; }
-.week-stepper-range { display: block; font-size: 15px; color: var(--hub-text-muted); margin-top: 2px; }
-.week-jump {
-  margin-left: auto; min-height: 44px; border: 1.5px solid var(--line-strong); border-radius: var(--button-radius);
-  background: var(--bg-panel); color: var(--text-navy); font-family: var(--font-ui); font-weight: 700; font-size: 15px; padding: 0 16px;
+.week-arrow .icon-chevron { width: 10px; height: 16px; }
+.week-arrow:hover { opacity: .7; }
+.week-strip { flex: 1 1 auto; display: grid; grid-template-columns: repeat(6, 1fr); }
+.week-tab { background: none; border: none; padding: 4px 8px; cursor: pointer; text-align: center; }
+.week-tab .wt-num { display: block; font-family: var(--font-ui); font-weight: 800; font-size: 15px; text-transform: uppercase; letter-spacing: .01em; color: var(--hub-text-muted); }
+.week-tab .wt-range { display: block; font-size: 13px; color: var(--hub-text-muted); margin-top: 2px; }
+.week-tab.active .wt-num, .week-tab.active .wt-range { color: var(--text-navy); font-weight: 900; }
+@media (max-width: 860px) {
+  .week-strip { grid-template-columns: repeat(4, 1fr); }
+  .week-tab:nth-child(n+5) { display: none; }
+}
+@media (max-width: 560px) {
+  .week-strip { grid-template-columns: repeat(2, 1fr); }
+  .week-tab:nth-child(n+3) { display: none; }
 }
 
 /* Full Season — a plain list of weeks, not a wall of 288 cards */
-.week-list { display: flex; flex-direction: column; gap: 10px; }
+.week-list { display: flex; flex-direction: column; gap: 12px; }
 .week-list-row {
   display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 56px;
-  padding: 14px 20px; border: 1.5px solid var(--line-strong); border-radius: var(--radius-md);
+  padding: 16px 20px; border: 1.5px solid var(--line-strong); border-radius: var(--radius-md);
   background: var(--bg-panel); font-family: var(--font-ui); cursor: pointer; text-align: left; width: 100%;
 }
 .week-list-row:hover { border-color: var(--accent); }
 .week-list-row .wl-left { display: flex; align-items: baseline; gap: 12px; }
-.week-list-row .wl-num { font-family: var(--font-display); font-weight: 900; font-size: 18px; color: var(--text-navy); }
+.week-list-row .wl-num { font-family: var(--font-ui); font-weight: 800; font-size: 18px; color: var(--text-navy); }
 .week-list-row .wl-range { font-size: 14px; color: var(--hub-text-muted); }
 .week-list-row .wl-count { font-size: 14px; color: var(--hub-text-muted); }
 
-/* Week groups — label with a trailing rule to its right, not a
-   full-width line underneath */
-.week-group { margin-bottom: 34px; }
-.week-group-heading {
-  display: flex; align-items: center; gap: 14px;
-  font-family: var(--font-display); font-weight: 900; font-size: 20px; color: var(--text-navy);
-  margin-bottom: 14px;
-}
-.week-group-heading::after { content: ""; flex: 1; height: 2px; background: var(--line); }
-.week-range { font-size: 14px; font-weight: 400; color: var(--hub-text-muted); font-family: var(--font-ui); }
+.week-group { margin-bottom: 32px; }
+/* Date band — full-width filled band (schedule-table look) instead of a
+   thin trailing-rule label */
 .date-heading {
-  display: flex; align-items: center; gap: 12px;
   font-family: var(--font-heading); font-weight: 700; font-size: 14px; letter-spacing: .04em;
-  text-transform: uppercase; color: var(--hub-text-muted); margin-bottom: 12px;
+  text-transform: uppercase; color: var(--text-navy); background: var(--tag-blue-04);
+  padding: 12px 16px; border-radius: var(--radius-sm); margin-bottom: 12px;
 }
-.date-heading::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 .game-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+
+/* Week View's game list — always a single full-width column ("1 by 1"),
+   each game its own card (light-grey stroke, rounded, subtle lift), with
+   a quiet column-header caption above them on wider screens. */
+.game-row-list { display: flex; flex-direction: column; gap: 12px; }
+.row-header {
+  display: grid; grid-template-columns: 2fr 1fr 1.2fr 1.4fr; gap: 16px;
+  padding: 0 20px; margin-bottom: 12px; font-family: var(--font-ui); font-weight: 700; font-size: 12px;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--hub-text-muted);
+}
+@media (max-width: 768px) { .row-header { display: none; } }
+
+.game-row {
+  position: relative; overflow: hidden;
+  display: grid; grid-template-columns: 2fr 1fr 1.2fr 1.4fr; gap: 16px; align-items: center;
+  padding: 24px 20px 20px; background: var(--bg-panel); border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg); box-shadow: 0 4px 16px rgba(6,17,31,.06), 0 1px 3px rgba(6,17,31,.04);
+  --status-color: var(--line-strong);
+}
+/* Extended top part in the status color — the "tag" for the card,
+   instead of a small pill floating in the status column. */
+.game-row::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 6px; background: var(--status-color); }
+.game-row.status-live { --status-color: #C4160F; }
+.game-row.status-final-pending, .game-row.status-delayed, .game-row.status-postponed { --status-color: #C9971F; }
+.game-row.status-final { --status-color: var(--success); }
+.game-row.status-cancelled { --status-color: #8A94A6; }
+
+.gr-status-label { font-family: var(--font-ui); font-weight: 800; font-size: 13px; letter-spacing: .03em; text-transform: uppercase; color: var(--status-color); }
+
+.gr-matchup { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; min-width: 0; }
+.gr-team { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-heading); font-weight: 700; font-size: 16px; color: var(--text-navy); }
+.gr-team .team-logo { width: 24px; height: 24px; }
+.gr-team .gr-score { font-family: var(--font-display); font-weight: 900; font-size: 18px; margin-left: 2px; }
+.gr-team.winner .gr-score { color: var(--accent); }
+.gr-at { font-size: 13px; font-weight: 700; color: var(--hub-text-muted); }
+.gr-status { font-family: var(--font-ui); font-size: 15px; color: var(--text-navy); display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.gr-sub { display: block; font-size: 14px; color: var(--hub-text-muted); margin-top: 2px; font-weight: 400; }
+.gr-sub.situation { color: var(--text-navy); font-weight: 700; }
+.gr-location { font-family: var(--font-ui); font-size: 14px; color: var(--hub-text-muted); line-height: 1.4; }
+.gr-action { min-width: 0; }
+.gr-action .vote-row, .gr-action .vote-results { margin-top: 0; }
+.gr-action .cta-btn.full { margin-top: 8px; }
+
+@media (max-width: 768px) {
+  .game-row { grid-template-columns: 1fr; gap: 12px; padding: 24px 20px 20px; }
+}
 
 /* Game card (PRD §6 — single shared component for Hub + embeds) */
 .game-card-v1 {
@@ -214,7 +276,7 @@
 .card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .status-badge {
   font-family: var(--font-ui); font-weight: 800; font-size: 13px; letter-spacing: .02em; text-transform: uppercase;
-  padding: 5px 12px; border-radius: 999px; display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 12px; border-radius: var(--button-radius); display: inline-flex; align-items: center; gap: 6px;
 }
 .status-badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
 .status-scheduled { background: var(--line); color: #565F68; }
@@ -229,34 +291,37 @@
 
 .card-meta { font-size: 14px; color: var(--hub-text-muted); font-family: var(--font-ui); }
 
-.matchup { display: flex; flex-direction: column; gap: 10px; margin: 12px 0; }
+.matchup { display: flex; flex-direction: column; gap: 12px; margin: 12px 0; }
 .team-row { display: flex; align-items: center; justify-content: space-between; }
 .team-name { display: flex; align-items: center; gap: 10px; font-family: var(--font-heading); font-weight: 700; font-size: 17px; color: var(--text-navy); }
 .team-logo { width: 28px; height: 28px; object-fit: contain; flex-shrink: 0; }
 .team-score { font-family: var(--font-display); font-weight: 900; font-size: 24px; color: var(--text-navy); }
 .team-row.winner .team-score { color: var(--accent); }
 
-.card-bottom { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; font-size: 14px; color: var(--hub-text-muted); }
+.card-bottom { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; font-size: 14px; color: var(--hub-text-muted); }
 .situation { font-weight: 700; color: var(--text-navy); }
 
 /* Voting (PRD §7) */
-.vote-row { display: flex; gap: 10px; margin-top: 12px; }
+.vote-row { display: flex; gap: 12px; margin-top: 12px; }
 .vote-btn {
   flex: 1; min-height: 48px; border: 1.5px solid var(--line-strong); background: var(--bg-panel); color: var(--text-navy);
   border-radius: var(--button-radius); padding: 0 10px; font-family: var(--font-ui); font-weight: 800; font-size: 16px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
 }
 .vote-btn:hover { border-color: var(--accent); color: var(--accent); }
+.team-logo-sm { width: 20px; height: 20px; object-fit: contain; }
 .vote-results { margin-top: 12px; }
-.vote-bar-row { display: grid; grid-template-columns: 78px 1fr 44px; align-items: center; gap: 10px; font-size: 15px; color: var(--hub-text-muted); margin-bottom: 8px; }
-.vote-bar-row span:last-child { text-align: right; font-weight: 800; color: var(--text-navy); }
-.vote-bar { height: 14px; border-radius: 999px; background: var(--line); overflow: hidden; }
-.vote-bar-fill { height: 100%; border-radius: 999px; }
-.vote-bar-fill.home { background: var(--accent); }
-.vote-bar-fill.away { background: var(--line-strong); }
-.vote-total { font-size: 13px; color: var(--hub-text-muted); text-align: right; margin-top: 2px; }
+/* One combined bar — each team's own brand color, side by side in a
+   single line — instead of two stacked bars. */
+.vote-combined-bar { display: flex; height: 14px; border-radius: 8px; overflow: hidden; background: var(--line); }
+.vote-seg:first-child { border-radius: 8px 0 0 8px; }
+.vote-seg:last-child { border-radius: 0 8px 8px 0; }
+.vote-combined-labels { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 14px; font-weight: 700; color: var(--text-navy); }
+.vote-combined-labels span { display: inline-flex; align-items: center; gap: 6px; }
+.vote-total { font-size: 13px; color: var(--hub-text-muted); text-align: right; margin-top: 4px; }
 .prediction-result {
   margin-top: 12px; font-size: 15px; font-weight: 700; color: var(--text-navy);
-  background: var(--line); border-radius: var(--radius-sm); padding: 10px 12px; text-align: center;
+  background: var(--line); border-radius: var(--radius-sm); padding: 12px; text-align: center;
 }
 .prediction-result.correct { background: var(--tag-green); color: var(--tag-green-text); }
 .prediction-result.correct .check-icon { width: 15px; height: 12px; vertical-align: -1px; margin-left: 2px; }
@@ -273,28 +338,28 @@
 .cta-btn.full { width: 100%; margin-top: 12px; }
 .cta-btn .btn-icon { width: 16px; height: 16px; flex-shrink: 0; }
 
-.empty-state { text-align: center; padding: 60px 20px; color: var(--hub-text-muted); font-family: var(--font-ui); font-size: 15px; }
-.empty-state strong { display: block; font-family: var(--font-display); font-size: 22px; color: var(--text-navy); margin-bottom: 6px; }
+.empty-state { text-align: center; padding: 64px 20px; color: var(--hub-text-muted); font-family: var(--font-ui); font-size: 15px; }
+.empty-state strong { display: block; font-family: var(--font-display); font-size: 22px; color: var(--text-navy); margin-bottom: 8px; }
 
-.back-link { display: inline-flex; align-items: center; gap: 6px; color: var(--accent); text-decoration: none; font-weight: 700; font-size: 15px; margin-bottom: 18px; }
+.back-link { display: inline-flex; align-items: center; gap: 8px; color: var(--accent); text-decoration: none; font-weight: 700; font-size: 15px; margin-bottom: 16px; }
 .freshness { font-size: 14px; color: var(--hub-text-muted); text-align: center; margin-top: 8px; }
-.delay-note { background: #F7E6C4; border: 1px solid #E8CE8E; border-radius: var(--radius-md); padding: 14px; font-size: 15px; color: #6b4900; }
+.delay-note { background: #F7E6C4; border: 1px solid #E8CE8E; border-radius: var(--radius-md); padding: 16px; font-size: 15px; color: #6b4900; }
 
 /* Calendar chooser */
 .modal-backdrop { position: fixed; inset: 0; background: rgba(6,17,31,.4); display: none; align-items: center; justify-content: center; z-index: 200; }
 .modal-backdrop.open { display: flex; }
 .modal { background: #FFFFFF; border-radius: var(--radius-lg); padding: 24px; width: min(380px, 90vw); box-shadow: var(--shadow-lg); }
 .modal h4 { font-family: var(--font-display); font-size: 20px; color: #033162; margin-bottom: 16px; }
-.modal-option { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 48px; border: 1.5px solid var(--line-strong); background: #FFFFFF; border-radius: var(--button-radius); padding: 0 16px; margin-bottom: 10px; font-family: var(--font-ui); font-weight: 700; font-size: 16px; color: #033162; }
+.modal-option { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 48px; border: 1.5px solid var(--line-strong); background: #FFFFFF; border-radius: var(--button-radius); padding: 0 16px; margin-bottom: 12px; font-family: var(--font-ui); font-weight: 700; font-size: 16px; color: #033162; }
 .modal-option:hover { border-color: var(--accent); color: var(--accent); }
 .modal-option .icon-chevron { color: var(--hub-text-muted); }
 .modal-close { display: block; width: 100%; text-align: center; margin-top: 8px; padding: 8px; color: var(--hub-text-muted); font-size: 14px; background: none; border: none; }
 
 /* Article-embed demo scaffolding */
-.embed-block { margin-bottom: 34px; }
+.embed-block { margin-bottom: 32px; }
 .embed-tag {
   display: inline-block; font-family: "SFMono-Regular", Consolas, monospace; font-size: 12px;
-  background: #06111F; color: #B5D8FD; padding: 6px 10px; border-radius: 6px 6px 0 0;
+  background: #06111F; color: #B5D8FD; padding: 4px 12px; border-radius: 6px 6px 0 0;
 }
 .embed-mount { border: 1.5px dashed var(--line-strong); border-top: none; border-radius: 0 var(--radius-md) var(--radius-md) var(--radius-md); padding: 16px; }
 .embed-mount .game-grid { max-width: 340px; }

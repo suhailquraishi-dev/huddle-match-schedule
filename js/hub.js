@@ -1,20 +1,25 @@
-/* Schedule Hub — Week View + Full Season (PRD §5), plus a team filter.
-   Redesigned for a 50+ audience: a single big "Week N" stepper instead of
-   a multi-tile carousel, and a plain scannable week list instead of a
-   288-card Full Season grid. Deep-links from the newsletter CTA arrive
-   as ?week=N (stands in for /nfl/schedule/week/N until this is
-   server-routed) and open straight to that week. */
+/* Schedule Hub — Week View + Full Season (PRD §5), plus a team filter and
+   a flat, borderless multi-week strip (six weeks visible at once, arrows
+   page the window, tapping a week selects it — no boxes/pills around the
+   tabs). Deep-links from the newsletter CTA arrive as ?week=N (stands in
+   for /nfl/schedule/week/N until this is server-routed) and open straight
+   to that week. */
 
 let currentView = "week"; // "week" | "season"
 let currentWeek = getCurrentOrNextWeek();
 let currentTeamFilter = "";
+let stripStart = Math.max(1, Math.min(currentWeek, 18 - 5)); // first week shown in the 6-wide strip
 
-function weekDateRange(week) {
+function weekDateRange(week, short = false) {
   const games = getGamesForWeek(week);
   const dates = games.map((g) => new Date(g.scheduledAt));
   const min = new Date(Math.min(...dates)), max = new Date(Math.max(...dates));
-  const fmt = (d) => d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-  return `${fmt(min)} – ${fmt(max)}`;
+  if (!short) {
+    const fmt = (d) => d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    return `${fmt(min)} – ${fmt(max)}`;
+  }
+  const month = min.toLocaleDateString(undefined, { month: "short" }).toUpperCase();
+  return `${min.getDate()} ${month} - ${max.getDate()}`;
 }
 
 function applyTeamFilter(games) {
@@ -34,21 +39,44 @@ function populateTeamFilter() {
   });
 }
 
-function renderWeekStepper() {
-  document.getElementById("weekLabelNum").textContent = `Week ${currentWeek}`;
-  document.getElementById("weekLabelRange").textContent = weekDateRange(currentWeek);
-  const jump = document.getElementById("weekJumpSelect");
-  if (!jump.options.length) {
-    jump.innerHTML = getWeeks().map((w) => `<option value="${w}">Jump to Week ${w}</option>`).join("");
-  }
-  jump.value = String(currentWeek);
+/* Renders exactly 6 tabs (stripStart..stripStart+5), flat text only — no
+   border/background on the tabs themselves. The flanking arrows page
+   this window; clicking a tab selects it without moving the window. */
+function renderWeekStrip() {
+  const strip = document.getElementById("weekStrip");
+  const weeks = Array.from({ length: 6 }, (_, i) => stripStart + i);
+  strip.innerHTML = weeks.map((w) => `
+    <button class="week-tab ${w === currentWeek ? "active" : ""}" data-week="${w}">
+      <span class="wt-num">Week ${w}</span>
+      <span class="wt-range">${weekDateRange(w, true)}</span>
+    </button>
+  `).join("");
+  strip.querySelectorAll(".week-tab").forEach((tab) => {
+    tab.addEventListener("click", () => selectWeek(Number(tab.dataset.week), "strip"));
+  });
 }
 
-function goToWeek(week, method) {
+function selectWeek(week, method) {
   currentWeek = Math.min(18, Math.max(1, week));
   track("week_or_filter_changed", { to: currentWeek, method });
-  renderWeekStepper();
+  renderWeekStrip();
   renderWeekView();
+}
+
+/* Like selectWeek, but also recenters the strip window — for jumps that
+   can land far outside the currently visible 6 weeks (deep link, Full
+   Season row). */
+function jumpToWeek(week, method) {
+  currentWeek = Math.min(18, Math.max(1, week));
+  stripStart = Math.max(1, Math.min(currentWeek, 18 - 5));
+  track("week_or_filter_changed", { to: currentWeek, method });
+  renderWeekStrip();
+  renderWeekView();
+}
+
+function stepStrip(delta) {
+  stripStart = Math.max(1, Math.min(stripStart + delta, 18 - 5));
+  renderWeekStrip();
 }
 
 function groupByDate(games) {
@@ -68,7 +96,8 @@ function renderWeekView() {
   root.innerHTML = Object.entries(byDate).map(([date, gs]) => `
     <div class="week-group">
       <div class="date-heading">${date}</div>
-      <div class="game-grid">${gs.map(renderGameCard).join("")}</div>
+      <div class="row-header"><span>Matchup</span><span>Status</span><span>Location</span><span>Vote / Calendar</span></div>
+      <div class="game-row-list">${gs.map(renderGameRow).join("")}</div>
     </div>
   `).join("");
 }
@@ -88,7 +117,7 @@ function renderFullSeason() {
   document.getElementById("scheduleRoot").innerHTML = `<div class="week-list">${rows}</div>`;
   document.querySelectorAll(".week-list-row").forEach((row) => {
     row.addEventListener("click", () => {
-      goToWeek(Number(row.dataset.week), "full_season_row");
+      jumpToWeek(Number(row.dataset.week), "full_season_row");
       setView("week");
     });
   });
@@ -98,7 +127,7 @@ function setView(view) {
   currentView = view;
   document.querySelectorAll(".view-toggle button").forEach((b) => b.classList.toggle("active", b.dataset.view === view));
   document.getElementById("weekNav").hidden = view !== "week";
-  if (view === "week") { renderWeekStepper(); renderWeekView(); }
+  if (view === "week") { renderWeekStrip(); renderWeekView(); }
   else { renderFullSeason(); track("full_schedule_viewed", {}); }
 }
 
@@ -107,14 +136,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const deepLinkWeek = Number(params.get("week"));
   if (deepLinkWeek >= 1 && deepLinkWeek <= 18) {
     currentWeek = deepLinkWeek;
+    stripStart = Math.max(1, Math.min(currentWeek, 18 - 5));
     track("newsletter_cta_landed", { week: deepLinkWeek, source: getTrafficSource() });
   }
   track("schedule_hub_visited", { week: currentWeek });
 
   populateTeamFilter();
-  document.getElementById("weekPrev").addEventListener("click", () => goToWeek(currentWeek - 1, "step"));
-  document.getElementById("weekNext").addEventListener("click", () => goToWeek(currentWeek + 1, "step"));
-  document.getElementById("weekJumpSelect").addEventListener("change", (e) => goToWeek(Number(e.target.value), "jump_select"));
+  document.getElementById("weekPrev").addEventListener("click", () => stepStrip(-1));
+  document.getElementById("weekNext").addEventListener("click", () => stepStrip(1));
   document.querySelectorAll(".view-toggle button").forEach((b) => {
     b.addEventListener("click", () => setView(b.dataset.view));
   });

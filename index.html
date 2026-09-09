@@ -5,8 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NFL Schedule Hub — EssentiallySports</title>
 <link rel="icon" href="assets/logos/favicon-es.ico">
-<link rel="stylesheet" href="css/tokens.css">
-<link rel="stylesheet" href="css/styles.css">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/tokens.css?v=1788932953">
+<link rel="stylesheet" href="css/styles.css?v=1788932953">
 </head>
 <body>
 
@@ -156,12 +158,17 @@
   <button class="navbar-toggle" id="navToggle" aria-label="Menu" aria-expanded="false">&#9776;</button>
 </nav>
 
+<div class="hero-banner">
+  <div class="hero-overlay">
+    <span class="hero-eyebrow">EssentiallySports &middot; 2026 Season</span>
+    <div class="hero-title">NFL Schedule Hub</div>
+    <div class="hero-sub">Every kickoff, every pick, every result — one place to follow along.</div>
+  </div>
+</div>
+
 <main class="page">
   <div class="hub-header">
-    <div>
-      <div class="hub-title">NFL Schedule Hub</div>
-      <div class="hub-sub">2026 Season &middot; Times shown in your local timezone</div>
-    </div>
+    <div class="hub-sub">Times shown in your local timezone</div>
     <div class="hub-controls">
       <select class="team-filter-select" id="teamFilterSelect">
         <option value="">Team Schedules</option>
@@ -175,13 +182,9 @@
   </div>
 
   <div class="week-nav" id="weekNav">
-    <button class="step-lg" id="weekPrev" aria-label="Previous week"><svg class="icon-chevron" style="transform:rotate(90deg);" viewBox="0 0 16 10" fill="none" aria-hidden="true"><path d="M14.98 1.14 7.98 7.14.98 1.14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-    <div class="week-stepper-label">
-      <span class="week-stepper-num" id="weekLabelNum">Week 1</span>
-      <span class="week-stepper-range" id="weekLabelRange"></span>
-    </div>
-    <button class="step-lg" id="weekNext" aria-label="Next week"><svg class="icon-chevron" style="transform:rotate(-90deg);" viewBox="0 0 16 10" fill="none" aria-hidden="true"><path d="M14.98 1.14 7.98 7.14.98 1.14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-    <select class="week-jump" id="weekJumpSelect" aria-label="Jump to a different week"></select>
+    <button class="week-arrow" id="weekPrev" aria-label="Previous week"><svg class="icon-chevron" style="transform:rotate(90deg);" viewBox="0 0 16 10" fill="none" aria-hidden="true"><path d="M14.98 1.14 7.98 7.14.98 1.14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <div class="week-strip" id="weekStrip"></div>
+    <button class="week-arrow" id="weekNext" aria-label="Next week"><svg class="icon-chevron" style="transform:rotate(-90deg);" viewBox="0 0 16 10" fill="none" aria-hidden="true"><path d="M14.98 1.14 7.98 7.14.98 1.14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
   </div>
 
   <div id="scheduleRoot"></div>
@@ -284,11 +287,11 @@
   </div>
 </div>
 
-<script src="js/data.js"></script>
-<script src="js/voting.js"></script>
-<script src="js/analytics.js"></script>
-<script src="js/game-card.js"></script>
-<script src="js/common.js"></script>
-<script src="js/hub.js"></script>
+<script src="js/data.js?v=1788932953"></script>
+<script src="js/voting.js?v=1788932953"></script>
+<script src="js/analytics.js?v=1788932953"></script>
+<script src="js/game-card.js?v=1788932953"></script>
+<script src="js/common.js?v=1788932953"></script>
+<script src="js/hub.js?v=1788932953"></script>
 </body>
 </html>

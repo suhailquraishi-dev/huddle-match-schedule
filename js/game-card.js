@@ -45,11 +45,13 @@ function voteButtonsHtml(game) {
   const away = getTeam(game.away.abbr), home = getTeam(game.home.abbr);
   return `
     <div class="vote-row">
-      <button class="vote-btn" onclick="handleVoteClick('${game.id}','away')">Vote ${away.short}</button>
-      <button class="vote-btn" onclick="handleVoteClick('${game.id}','home')">Vote ${home.short}</button>
+      <button class="vote-btn" onclick="handleVoteClick('${game.id}','away')">Vote <img class="team-logo-sm" src="${away.logo}" alt="${away.name}"></button>
+      <button class="vote-btn" onclick="handleVoteClick('${game.id}','home')">Vote <img class="team-logo-sm" src="${home.logo}" alt="${home.name}"></button>
     </div>`;
 }
 
+/* Single combined bar (both teams' colors in one line) rather than two
+   stacked bars — shows who's ahead and by how much at a glance. */
 function voteResultsHtml(game, opts = {}) {
   const away = getTeam(game.away.abbr), home = getTeam(game.home.abbr);
   const { homePct, awayPct } = getVotePercentages(game);
@@ -69,8 +71,13 @@ function voteResultsHtml(game, opts = {}) {
   }
   return `
     <div class="vote-results">
-      <div class="vote-bar-row"><span>${away.short}</span><div class="vote-bar"><div class="vote-bar-fill away" style="width:${awayPct}%"></div></div><span>${awayPct}%</span></div>
-      <div class="vote-bar-row"><span>${home.short}</span><div class="vote-bar"><div class="vote-bar-fill home" style="width:${homePct}%"></div></div><span>${homePct}%</span></div>
+      <div class="vote-combined-bar">
+        <div class="vote-seg" style="width:${awayPct}%; background:${away.color};"></div><div class="vote-seg" style="width:${homePct}%; background:${home.color};"></div>
+      </div>
+      <div class="vote-combined-labels">
+        <span><img class="team-logo-sm" src="${away.logo}" alt="${away.name}">${away.short} ${awayPct}%</span>
+        <span>${home.short} ${homePct}%<img class="team-logo-sm" src="${home.logo}" alt="${home.name}"></span>
+      </div>
       <div class="vote-total">${total.toLocaleString()} votes${locked ? " · Voting closed" : ""}</div>
     </div>
     ${predictionHtml}`;
@@ -131,10 +138,67 @@ function renderGameCard(game) {
   </div>`;
 }
 
+/* --- Row layout — Week View's single-column game list. Same underlying
+   data/vote/calendar logic as the card above, laid out as a
+   matchup/status/location/action row instead of a stacked box. --- */
+
+function rowStatusHtml(game) {
+  const badge = `<span class="gr-status-label">${STATUS_LABEL[game.status]}</span>`;
+  let sub = "";
+  if (game.status === "scheduled") sub = `<span class="gr-sub">${kickoffTime(game.scheduledAt)} · ${game.broadcast || "TV TBD"}</span>`;
+  else if (game.status === "postponed") sub = `<span class="gr-sub">New: ${ordinalDate(game.scheduledAt)} · ${kickoffTime(game.scheduledAt)}</span>`;
+  else if (game.status === "live" || game.status === "delayed") sub = `<span class="gr-sub situation">${game.statusDetail}</span>`;
+  else if (game.status === "final" || game.status === "final-pending") sub = `<span class="gr-sub">${ordinalDate(game.scheduledAt)}</span>`;
+  return `${badge}${sub}`;
+}
+
+function rowActionHtml(game) {
+  const hasVotedOrLocked = isVotingLocked(game) || !!getUserVote(game.id);
+  switch (game.status) {
+    case "scheduled":
+      return `${hasVotedOrLocked ? voteResultsHtml(game) : voteButtonsHtml(game)}${calendarButtonHtml(game)}`;
+    case "live":
+    case "delayed":
+    case "final-pending":
+      return voteResultsHtml(game);
+    case "final":
+      /* No prediction-result box here — the row's colored top strip
+         plus the winner's score already highlighted in blue tell the
+         same story, so the extra green/amber box would be redundant. */
+      return voteResultsHtml(game);
+    case "postponed":
+      return calendarButtonHtml(game);
+    case "cancelled":
+      return `<span class="freshness">Not played</span>`;
+    default:
+      return "";
+  }
+}
+
+function rowTeamHtml(abbr, score, winner, side) {
+  const t = getTeam(abbr);
+  const scoreHtml = score !== undefined ? `<span class="gr-score">${score}</span>` : "";
+  return `<div class="gr-team ${winner === side ? "winner" : ""}"><img class="team-logo" src="${t.logo}" alt="${t.name}" width="26" height="26">${t.short}${scoreHtml}</div>`;
+}
+
+function renderGameRow(game) {
+  return `
+  <div class="game-row status-${game.status}" data-game-id="${game.id}">
+    <div class="gr-matchup">
+      ${rowTeamHtml(game.away.abbr, game.away.score, game.winner, "away")}
+      <span class="gr-at">@</span>
+      ${rowTeamHtml(game.home.abbr, game.home.score, game.winner, "home")}
+    </div>
+    <div class="gr-status">${rowStatusHtml(game)}</div>
+    <div class="gr-location">${game.venue}<span class="gr-sub">${game.city}</span></div>
+    <div class="gr-action">${rowActionHtml(game)}</div>
+  </div>`;
+}
+
 function handleVoteClick(gameId, side) {
   if (!castVote(gameId, side)) return;
   const game = getGameById(gameId);
   document.querySelectorAll(`[data-game-id="${gameId}"]`).forEach((el) => {
-    el.outerHTML = renderGameCard(game);
+    el.outerHTML = el.classList.contains("game-row") ? renderGameRow(game) : renderGameCard(game);
   });
 }
