@@ -94,22 +94,21 @@ function copyEventLink(game) {
   alert(`Copied: ${link}`);
 }
 
+/* Choosing a provider confirms success on the card itself — the button
+   flips to "Added to Calendar" and stays that way (change doc §9). */
+function completeCalendarAdd(provider, action) {
+  if (!pendingGame) return;
+  const game = pendingGame;
+  track("calendar_provider_selected", { game_id: game.id, provider });
+  action(game);
+  if (typeof markOnCalendar === "function") markOnCalendar(game.id);
+  closeScheduleModal();
+}
+
 function wireScheduleModal() {
-  document.getElementById("optGoogle")?.addEventListener("click", () => {
-    if (!pendingGame) return;
-    track("calendar_provider_selected", { game_id: pendingGame.id, provider: "google" });
-    openGoogleCalendar(pendingGame);
-  });
-  document.getElementById("optIcs")?.addEventListener("click", () => {
-    if (!pendingGame) return;
-    track("calendar_provider_selected", { game_id: pendingGame.id, provider: "ics" });
-    downloadIcs(pendingGame);
-  });
-  document.getElementById("optCopy")?.addEventListener("click", () => {
-    if (!pendingGame) return;
-    track("calendar_provider_selected", { game_id: pendingGame.id, provider: "copy_link" });
-    copyEventLink(pendingGame);
-  });
+  document.getElementById("optGoogle")?.addEventListener("click", () => completeCalendarAdd("google", openGoogleCalendar));
+  document.getElementById("optIcs")?.addEventListener("click", () => completeCalendarAdd("ics", downloadIcs));
+  document.getElementById("optCopy")?.addEventListener("click", () => completeCalendarAdd("copy_link", copyEventLink));
   document.getElementById("scheduleModal")?.addEventListener("click", (e) => {
     if (e.target.id === "scheduleModal") closeScheduleModal();
   });

@@ -25,8 +25,8 @@
 
 :root {
   --white: #FFFFFF;
-  --bg-page: #E9EBEE;
-  --bg-panel: #FFFFFF;
+  --bg-page: #E9EBEE;   /* alias of --canvas, kept for the ES chrome */
+  --bg-panel: #FFFFFF;  /* alias of --surface */
   --bg-canvas: #F2F8FF;
   --bg-canvas-soft: #F1F8FF;
   --border: #B5D8FD;
@@ -53,6 +53,30 @@
   --font-ui: 'Roboto Condensed', 'Roboto', Arial, sans-serif;
   --font-heading: 'Roboto Condensed', 'Roboto', Arial, sans-serif;
   --font-display: "FrameUp Acumin", 'Acumin Pro Condensed', 'Arial Narrow', sans-serif;
+
+  /* Type scale (change doc §4) — one locked scale; weights carry
+     hierarchy within the ES two-family system (Acumin display /
+     Roboto Condensed UI). No one-off font sizes per component. */
+  --fs-h1: clamp(32px, 4vw, 40px);
+  --fs-support: 15px;   /* season line / supporting copy */
+  --fs-section: 22px;   /* section + week titles */
+  --fs-team: 18px;      /* team names */
+  --fs-time: 22px;      /* kickoff time / score — the dominant number */
+  --fs-meta: 14px;      /* venue, broadcast, counts */
+  --fs-label: 12px;     /* status + column labels, uppercase */
+
+  /* Semantic UI colors (change doc §5) — every component pulls from
+     these rather than declaring its own greys/reds/ambers. */
+  --canvas: #E9EBEE;          /* page background */
+  --surface: #FFFFFF;         /* card surface */
+  --ui-border: #CBD1D9;       /* card + control borders */
+  --ui-divider: #E3E6EB;      /* light rules, bar tracks */
+  --live: #C4160F;            /* semantic red */
+  --live-soft: #FBE1E1;
+  --warn: #B5741A;            /* delayed / postponed / final-pending */
+  --warn-soft: #F7E6C4;
+  --neutral-status: #6B7683;  /* scheduled / cancelled */
+  --focus-ring: 0 0 0 3px rgba(10,125,250,.4);
 
   --radius-sm: 6px;
   --radius-md: 8px;
@@ -82,3 +106,7 @@ img { max-width: 100%; display: block; }
 a { color: inherit; }
 button { font-family: inherit; cursor: pointer; }
 [hidden] { display: none !important; }
+
+/* Visible keyboard focus everywhere (change doc §9, §13). Pointer users
+   don't see it; keyboard users always do. */
+:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }

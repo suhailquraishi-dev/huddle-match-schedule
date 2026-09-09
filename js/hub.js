@@ -1,25 +1,33 @@
-/* Schedule Hub — Week View + Full Season (PRD §5), plus a team filter and
-   a flat, borderless multi-week strip (six weeks visible at once, arrows
-   page the window, tapping a week selects it — no boxes/pills around the
-   tabs). Deep-links from the newsletter CTA arrive as ?week=N (stands in
-   for /nfl/schedule/week/N until this is server-routed) and open straight
-   to that week. */
+/* Schedule Hub — Week View + Full Season (final change doc §3, §7, §8).
+
+   Week navigation is symmetrical: the arrows always move the selected
+   week by one, and the surrounding-weeks strip follows the selection
+   (desktop). On mobile the strip collapses to just the current week via
+   CSS, which leaves exactly previous / current / next.
+
+   Deep-links from the newsletter CTA arrive as ?week=N (stands in for
+   /nfl/schedule/week/N until this is server-routed). */
+
+const WEEKS_VISIBLE = 5;
 
 let currentView = "week"; // "week" | "season"
 let currentWeek = getCurrentOrNextWeek();
 let currentTeamFilter = "";
-let stripStart = Math.max(1, Math.min(currentWeek, 18 - 5)); // first week shown in the 6-wide strip
 
 function weekDateRange(week, short = false) {
-  const games = getGamesForWeek(week);
-  const dates = games.map((g) => new Date(g.scheduledAt));
+  const dates = getGamesForWeek(week).map((g) => new Date(g.scheduledAt));
   const min = new Date(Math.min(...dates)), max = new Date(Math.max(...dates));
   if (!short) {
     const fmt = (d) => d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
     return `${fmt(min)} – ${fmt(max)}`;
   }
-  const month = min.toLocaleDateString(undefined, { month: "short" }).toUpperCase();
-  return `${min.getDate()} ${month} - ${max.getDate()}`;
+  /* Short form for the week tabs. The month rides the end date so the
+     range never reads as an open-ended "11 SEPT - 17"; when the week
+     straddles two months both are named. */
+  const mon = (d) => d.toLocaleDateString(undefined, { month: "short" }).toUpperCase();
+  return mon(min) === mon(max)
+    ? `${min.getDate()} - ${max.getDate()} ${mon(max)}`
+    : `${min.getDate()} ${mon(min)} - ${max.getDate()} ${mon(max)}`;
 }
 
 function applyTeamFilter(games) {
@@ -35,99 +43,89 @@ function populateTeamFilter() {
   sel.addEventListener("change", () => {
     currentTeamFilter = sel.value;
     track("week_or_filter_changed", { to: currentTeamFilter || "all", method: "team_select" });
-    currentView === "week" ? renderWeekView() : renderFullSeason();
+    render();
   });
 }
 
-/* Renders exactly 6 tabs (stripStart..stripStart+5), flat text only — no
-   border/background on the tabs themselves. The flanking arrows page
-   this window; clicking a tab selects it without moving the window. */
-function renderWeekStrip() {
+/* The visible window keeps the selected week centred where possible, so
+   prev/next always reads symmetrically. */
+function visibleWeeks() {
+  const half = Math.floor(WEEKS_VISIBLE / 2);
+  const start = Math.max(1, Math.min(currentWeek - half, 18 - (WEEKS_VISIBLE - 1)));
+  return Array.from({ length: WEEKS_VISIBLE }, (_, i) => start + i);
+}
+
+function renderWeekNav() {
   const strip = document.getElementById("weekStrip");
-  const weeks = Array.from({ length: 6 }, (_, i) => stripStart + i);
-  strip.innerHTML = weeks.map((w) => `
-    <button class="week-tab ${w === currentWeek ? "active" : ""}" data-week="${w}">
+  strip.innerHTML = visibleWeeks().map((w) => `
+    <button class="week-tab ${w === currentWeek ? "active" : ""}" data-week="${w}" aria-current="${w === currentWeek}">
       <span class="wt-num">Week ${w}</span>
       <span class="wt-range">${weekDateRange(w, true)}</span>
     </button>
   `).join("");
   strip.querySelectorAll(".week-tab").forEach((tab) => {
-    tab.addEventListener("click", () => selectWeek(Number(tab.dataset.week), "strip"));
+    tab.addEventListener("click", () => goToWeek(Number(tab.dataset.week), "strip"));
   });
+  document.getElementById("weekPrev").disabled = currentWeek <= 1;
+  document.getElementById("weekNext").disabled = currentWeek >= 18;
 }
 
-function selectWeek(week, method) {
-  currentWeek = Math.min(18, Math.max(1, week));
+function goToWeek(week, method) {
+  const next = Math.min(18, Math.max(1, week));
+  if (next === currentWeek) return;
+  currentWeek = next;
   track("week_or_filter_changed", { to: currentWeek, method });
-  renderWeekStrip();
+  renderWeekNav();
   renderWeekView();
 }
 
-/* Like selectWeek, but also recenters the strip window — for jumps that
-   can land far outside the currently visible 6 weeks (deep link, Full
-   Season row). */
-function jumpToWeek(week, method) {
-  currentWeek = Math.min(18, Math.max(1, week));
-  stripStart = Math.max(1, Math.min(currentWeek, 18 - 5));
-  track("week_or_filter_changed", { to: currentWeek, method });
-  renderWeekStrip();
-  renderWeekView();
-}
-
-function stepStrip(delta) {
-  stripStart = Math.max(1, Math.min(stripStart + delta, 18 - 5));
-  renderWeekStrip();
-}
-
-function groupByDate(games) {
-  const byDate = {};
-  games.forEach((g) => { (byDate[g.dateLabel] ||= []).push(g); });
-  return byDate;
-}
-
+/* Cards carry their own day/date (§6), so Week View doesn't repeat it in
+   a group heading — the games are simply listed in kickoff order. */
 function renderWeekView() {
-  const games = applyTeamFilter(getGamesForWeek(currentWeek));
+  const games = applyTeamFilter(getGamesForWeek(currentWeek))
+    .slice()
+    .sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt));
   const root = document.getElementById("scheduleRoot");
   if (!games.length) {
-    root.innerHTML = `<div class="empty-state"><strong>No games</strong>${getTeam(currentTeamFilter).name} isn't scheduled this week.</div>`;
+    root.innerHTML = `<div class="empty-state"><strong>No games this week</strong>${getTeam(currentTeamFilter).name} isn't scheduled in Week ${currentWeek}.</div>`;
     return;
   }
-  const byDate = groupByDate(games);
-  root.innerHTML = Object.entries(byDate).map(([date, gs]) => `
-    <div class="week-group">
-      <div class="date-heading">${date}</div>
-      <div class="row-header"><span>Matchup</span><span>Status</span><span>Location</span><span>Vote / Calendar</span></div>
-      <div class="game-row-list">${gs.map(renderGameRow).join("")}</div>
-    </div>
-  `).join("");
+  root.innerHTML = `<div class="schedule-list">${games.map(renderScheduleCard).join("")}</div>`;
 }
 
-/* Full Season is a plain list of weeks — not a grid of every card — so
-   it stays scannable at a glance. Selecting a row jumps into Week View. */
+/* Full Season prioritises scanning: grouped by week, compact rows (§8) */
 function renderFullSeason() {
-  const rows = getWeeks().map((w) => {
+  const root = document.getElementById("scheduleRoot");
+  const groups = getWeeks().map((w) => {
     const games = applyTeamFilter(getGamesForWeek(w));
     if (!games.length) return "";
     return `
-      <button class="week-list-row" data-week="${w}">
-        <span class="wl-left"><span class="wl-num">Week ${w}</span><span class="wl-range">${weekDateRange(w)}</span></span>
-        <span class="wl-count">${games.length} game${games.length === 1 ? "" : "s"}</span>
-      </button>`;
+      <div class="week-group">
+        <div class="week-heading">Week ${w} <span class="wh-range">${weekDateRange(w)}</span></div>
+        <div class="season-rows">
+          <div class="season-head"><span>Date</span><span>Matchup</span><span>Time</span><span>Status</span><span></span></div>
+          ${games.map(renderScheduleRow).join("")}
+        </div>
+      </div>`;
   }).join("");
-  document.getElementById("scheduleRoot").innerHTML = `<div class="week-list">${rows}</div>`;
-  document.querySelectorAll(".week-list-row").forEach((row) => {
-    row.addEventListener("click", () => {
-      jumpToWeek(Number(row.dataset.week), "full_season_row");
-      setView("week");
-    });
-  });
+  root.innerHTML = groups ||
+    `<div class="empty-state"><strong>No games</strong>${getTeam(currentTeamFilter).name} has no games this season.</div>`;
+}
+
+function render() {
+  if (currentView === "week") renderWeekView();
+  else renderFullSeason();
 }
 
 function setView(view) {
   currentView = view;
-  document.querySelectorAll(".view-toggle button").forEach((b) => b.classList.toggle("active", b.dataset.view === view));
+  document.querySelectorAll(".view-toggle button").forEach((b) => {
+    const on = b.dataset.view === view;
+    b.classList.toggle("active", on);
+    b.setAttribute("aria-selected", String(on));
+  });
   document.getElementById("weekNav").hidden = view !== "week";
-  if (view === "week") { renderWeekStrip(); renderWeekView(); }
+  if (view === "week") { renderWeekNav(); renderWeekView(); }
   else { renderFullSeason(); track("full_schedule_viewed", {}); }
 }
 
@@ -136,14 +134,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const deepLinkWeek = Number(params.get("week"));
   if (deepLinkWeek >= 1 && deepLinkWeek <= 18) {
     currentWeek = deepLinkWeek;
-    stripStart = Math.max(1, Math.min(currentWeek, 18 - 5));
     track("newsletter_cta_landed", { week: deepLinkWeek, source: getTrafficSource() });
   }
   track("schedule_hub_visited", { week: currentWeek });
 
   populateTeamFilter();
-  document.getElementById("weekPrev").addEventListener("click", () => stepStrip(-1));
-  document.getElementById("weekNext").addEventListener("click", () => stepStrip(1));
+  document.getElementById("weekPrev").addEventListener("click", () => goToWeek(currentWeek - 1, "prev"));
+  document.getElementById("weekNext").addEventListener("click", () => goToWeek(currentWeek + 1, "next"));
   document.querySelectorAll(".view-toggle button").forEach((b) => {
     b.addEventListener("click", () => setView(b.dataset.view));
   });
