@@ -45,11 +45,26 @@ function ordinalDate(iso) {
 function shortDate(iso) {
   return new Date(iso).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
 }
+/* NFL is a US-audience sport, so ET is the primary, always-shown time
+   (per hub-sub copy: "ET, with your local time alongside"). The
+   viewer's own local time is shown as a secondary line wherever there
+   is room, and dropped when it would just repeat ET. */
+function kickoffTimeET(iso) {
+  const time = new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" });
+  return `${time} ET`;
+}
 function kickoffTime(iso) {
   return new Date(iso).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
 }
 function kickoffTimeTz(iso) {
   return new Date(iso).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", timeZoneName: "short" });
+}
+/* Local time alongside ET, or nothing if the viewer is already on ET
+   (Eastern browsers would otherwise see the same clock time twice). */
+function kickoffTimeLocalNote(iso) {
+  const et = new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" });
+  const local = kickoffTime(iso);
+  return et === local ? "" : `${kickoffTimeTz(iso)} local`;
 }
 
 /* --- Add to Schedule state (§9: confirm success) ------------------- */
@@ -66,7 +81,7 @@ function markOnCalendar(gameId) {
   });
 }
 
-function calendarButton(game, variant = "primary") {
+function calendarButton(game, variant = "secondary") {
   const added = isOnCalendar(game.id);
   const cls = added ? "btn btn-added" : `btn btn-${variant}`;
   const label = added ? `${CHECK_ICON_BTN}Added to Calendar` : `${CALENDAR_ICON}Add to Schedule`;
@@ -74,7 +89,12 @@ function calendarButton(game, variant = "primary") {
 }
 
 function viewGameButton(game) {
-  return `<a class="btn btn-secondary" href="game.html?id=${game.id}">View Game</a>`;
+  const label = game.status === "live" || game.status === "delayed"
+    ? "Watch Game Live"
+    : game.status === "final" || game.status === "final-pending"
+    ? "Watch Highlights"
+    : "View Game";
+  return `<a class="btn btn-secondary" href="game.html?id=${game.id}">${label}</a>`;
 }
 
 /* --- Broadcasters -------------------------------------------------- */
@@ -167,9 +187,10 @@ function cardCentre(game) {
     return `<div class="sc-time">Postponed</div><span class="sc-center-note strong">New date ${shortDate(game.scheduledAt)}</span>`;
   }
   if (game.status === "cancelled") {
-    return `<div class="sc-time muted">${kickoffTime(game.scheduledAt)}</div><span class="sc-center-note strong">Will not be played</span>`;
+    return `<div class="sc-time muted">${kickoffTimeET(game.scheduledAt)}</div><span class="sc-center-note strong">Will not be played</span>`;
   }
-  return `<div class="sc-time">${kickoffTime(game.scheduledAt)}</div><span class="sc-center-note">${new Date(game.scheduledAt).toLocaleTimeString(undefined, { timeZoneName: "short" }).split(" ").pop()}</span>`;
+  const localNote = kickoffTimeLocalNote(game.scheduledAt);
+  return `<div class="sc-time">${kickoffTimeET(game.scheduledAt)}</div>${localNote ? `<span class="sc-center-note">${localNote}</span>` : ""}`;
 }
 
 function cardActions(game) {
@@ -231,7 +252,7 @@ function renderScheduleRow(game) {
   const scored = SCORED.includes(game.status) && game.away.score !== undefined;
   const time = scored
     ? `${game.away.score}–${game.home.score}`
-    : game.status === "postponed" || game.status === "cancelled" ? "—" : kickoffTime(game.scheduledAt);
+    : game.status === "postponed" || game.status === "cancelled" ? "—" : kickoffTimeET(game.scheduledAt);
   const action = game.status === "scheduled" || game.status === "postponed"
     ? calendarButton(game, "secondary")
     : viewGameButton(game);
@@ -277,7 +298,7 @@ function cardBodyHtml(game) {
   switch (game.status) {
     case "scheduled":
       return `
-        <div class="card-bottom"><span>${kickoffTimeTz(game.scheduledAt)}</span><span>${broadcastHtml(game.broadcast) || "TV TBD"}</span></div>
+        <div class="card-bottom"><span>${kickoffTimeET(game.scheduledAt)}${kickoffTimeLocalNote(game.scheduledAt) ? ` · ${kickoffTimeLocalNote(game.scheduledAt)}` : ""}</span><span>${broadcastHtml(game.broadcast) || "TV TBD"}</span></div>
         ${canVote ? `<div class="sc-actions" style="margin-top:12px;">${voteButtons(game)}</div>` : votes}
         <div class="sc-actions" style="margin-top:12px;">${calendarButton(game)}</div>`;
     case "live":
@@ -296,7 +317,7 @@ function cardBodyHtml(game) {
     case "postponed":
       return `
         <div class="card-bottom"><span class="situation">Rescheduled from ${game.rescheduledFrom || "original date"}</span></div>
-        <div class="freshness">New date: ${ordinalDate(game.scheduledAt)} · ${kickoffTimeTz(game.scheduledAt)}</div>
+        <div class="freshness">New date: ${ordinalDate(game.scheduledAt)} · ${kickoffTimeET(game.scheduledAt)}</div>
         <div class="sc-actions" style="margin-top:12px;">${calendarButton(game)}</div>`;
     case "cancelled":
       return `<div class="card-bottom"><span class="situation">This game will not be played.</span></div>`;
