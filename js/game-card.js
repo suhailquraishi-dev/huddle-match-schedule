@@ -1,13 +1,14 @@
-/* Game components (final change doc §6, §8).
+/* Game components (final change doc §6, §8 + the MWeb design-brief pass).
 
    Two renderers share one data model and one set of tokens:
      renderScheduleCard() — Week View. Three-row anatomy:
-       day/date · status  →  team · time-or-score · team  →  meta · actions
+       status  →  team · time-or-score · team  →  meta · actions
      renderScheduleRow()  — Full Season. Compact scan row:
        Date | Matchup | Time | Status | Add to Schedule
 
    renderGameCard() below is the older stacked card, still used by the
-   single-game page and the article embeds. */
+   single-game page and the article embeds. It shares the same voting
+   components (votingPanel/resultsBar) as the redesigned schedule card. */
 
 /* Stroke-based checkmark matching the weight/rounding of the reference
    repo's chevron icon (site-chrome.js .profile-chevron) — no checkmark
@@ -31,14 +32,14 @@ const STATUS_LABEL = {
 /* Statuses where a score exists and the game is underway or done */
 const SCORED = ["live", "final", "final-pending", "delayed"];
 
-/* Row 1's day/date is derived from the kickoff timestamp, not the
-   authored dateLabel, so it agrees with the Full Season row and with the
-   viewer's timezone. */
-function cardDayLabel(iso) {
-  return new Date(iso)
-    .toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })
-    .toUpperCase();
+/* True when a game's local calendar date is tomorrow relative to now —
+   drives the "Happening Tomorrow" banner on Week View cards. */
+function isTomorrow(iso) {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return new Date(iso).toDateString() === tomorrow.toDateString();
 }
+
 function ordinalDate(iso) {
   return new Date(iso).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
 }
@@ -67,7 +68,7 @@ function kickoffTimeLocalNote(iso) {
   return et === local ? "" : `${kickoffTimeTz(iso)} local`;
 }
 
-/* --- Add to Schedule state (§9: confirm success) ------------------- */
+/* --- Remind Me / calendar state (§9: confirm success) --------------- */
 function calKey(gameId) { return `huddle.cal.${gameId}`; }
 function isOnCalendar(gameId) {
   try { return !!localStorage.getItem(calKey(gameId)); } catch { return false; }
@@ -77,14 +78,14 @@ function markOnCalendar(gameId) {
   document.querySelectorAll(`[data-cal-for="${gameId}"]`).forEach((btn) => {
     btn.classList.add("btn-added");
     btn.classList.remove("btn-primary");
-    btn.innerHTML = `${CHECK_ICON_BTN}Added to Calendar`;
+    btn.innerHTML = `${CHECK_ICON_BTN}Reminder Set`;
   });
 }
 
 function calendarButton(game, variant = "secondary") {
   const added = isOnCalendar(game.id);
   const cls = added ? "btn btn-added" : `btn btn-${variant}`;
-  const label = added ? `${CHECK_ICON_BTN}Added to Calendar` : `${CALENDAR_ICON}Add to Schedule`;
+  const label = added ? `${CHECK_ICON_BTN}Reminder Set` : `${CALENDAR_ICON}Remind Me`;
   return `<button class="${cls}" data-cal-for="${game.id}" onclick='openScheduleModal(${JSON.stringify(game)})'>${label}</button>`;
 }
 
@@ -128,41 +129,90 @@ function broadcastHtml(broadcast) {
     </span>`;
 }
 
-/* --- Voting -------------------------------------------------------- */
-/* White or near-black label, whichever reads better on the team color
-   (sRGB relative luminance, WCAG 4.5:1 crossover sits near .36). */
-function readableOn(hex) {
-  const c = hex.replace("#", "");
-  const [r, g, b] = [0, 2, 4].map((i) => parseInt(c.slice(i, i + 2), 16) / 255);
-  const lin = (v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
-  const L = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
-  return L > 0.36 ? "#06111F" : "#FFFFFF";
+/* --- Voting ---------------------------------------------------------
+   Two components replace the old solid-color vote buttons and thin
+   progress line: votingPanel() (open, pre-kickoff — a big clickable
+   "Who Wins?" choice) and resultsBar() (closed — a percentage bar
+   attached to each team, shown once voting locks or the viewer has
+   voted). Team color is a border/tint accent only, never a solid fill,
+   so no single team's brand color dominates the panel's visual weight. */
+
+function votingPanel(game) {
+  const away = getTeam(game.away.abbr), home = getTeam(game.home.abbr);
+  return `
+    <div class="sc-vote-panel">
+      <div class="vote-heading">Who Wins?</div>
+      <div class="vote-options">
+        <button type="button" class="vote-option" data-side="away" style="--team-color:${away.color};" onclick="handleVoteClick('${game.id}','away')">
+          <img src="${away.logo}" alt="">
+          <span class="vote-option-name">${away.short}</span>
+          <span class="vote-indicator"></span>
+        </button>
+        <button type="button" class="vote-option" data-side="home" style="--team-color:${home.color};" onclick="handleVoteClick('${game.id}','home')">
+          <img src="${home.logo}" alt="">
+          <span class="vote-option-name">${home.short}</span>
+          <span class="vote-indicator"></span>
+        </button>
+      </div>
+    </div>`;
 }
 
-function voteButtons(game) {
-  return ["away", "home"].map((side) => {
-    const t = getTeam(game[side].abbr);
-    return `<button class="vote-btn vote-btn-team" style="background:${t.color}; border-color:${t.color}; color:${readableOn(t.color)};" onclick="handleVoteClick('${game.id}','${side}')">Vote <img src="${t.logo}" alt="${t.name}"></button>`;
-  }).join("");
-}
-
-/* One bar, both team colors — team color as accent only (§5) */
-function voteBar(game) {
+/* Closed/results state. Percentages and the bar fill animate in from 0
+   on render (see animateVoteUI) rather than appearing at their final
+   value, per the motion spec. Live games keep the score as the card's
+   focal point, so results read visually secondary there. */
+function resultsBar(game) {
   const away = getTeam(game.away.abbr), home = getTeam(game.home.abbr);
   const { homePct, awayPct } = getVotePercentages(game);
-  const { total } = getVoteTally(game);
+  const { total, userVote } = getVoteTally(game);
   const locked = isVotingLocked(game);
+  const awayWinning = awayPct > homePct, homeWinning = homePct > awayPct;
+  const pickedTeam = userVote === "home" ? home : userVote === "away" ? away : null;
+  const secondary = game.status === "live" ? " is-secondary" : "";
   return `
-    <div class="sc-vote">
-      <div class="vote-bar">
-        <div class="vote-seg" style="width:${awayPct}%; background:${away.color};"></div><div class="vote-seg" style="width:${homePct}%; background:${home.color};"></div>
+    <div class="sc-vote-results${secondary}">
+      <div class="results-row">
+        <div class="results-team ${awayWinning ? "winning" : ""}">
+          <img src="${away.logo}" alt="">
+          <span class="results-name">${away.short}</span>
+          <span class="results-pct" data-animate-pct="${awayPct}">0%</span>
+        </div>
+        <div class="results-team ${homeWinning ? "winning" : ""}">
+          <span class="results-pct" data-animate-pct="${homePct}">0%</span>
+          <span class="results-name">${home.short}</span>
+          <img src="${home.logo}" alt="">
+        </div>
       </div>
-      <div class="vote-legend">
-        <span>${awayPct}%</span>
-        <span>${homePct}%</span>
+      <div class="results-bar">
+        <div class="results-fill away" data-animate-width="${awayPct}" style="width:0%; background:${away.color};"></div>
+        <div class="results-fill home" data-animate-width="${homePct}" style="width:0%; background:${home.color};"></div>
       </div>
-      <div class="vote-count">${total.toLocaleString()} votes${locked ? " · voting closed" : ""}</div>
+      <div class="vote-summary${pickedTeam ? "" : " no-pick"}">
+        ${pickedTeam ? `<span class="vote-pick">Your pick: <strong>${pickedTeam.name}</strong></span>` : ""}
+        <span class="vote-count">${total.toLocaleString()} votes${locked ? " · voting closed" : ""}</span>
+      </div>
     </div>`;
+}
+
+/* Animates every results bar / percentage number under `scope` from 0 to
+   its target value. Call once after inserting new results markup —
+   render call sites and handleVoteClick both do this. */
+function animateVoteUI(scope) {
+  scope.querySelectorAll("[data-animate-width]").forEach((el) => {
+    const target = parseFloat(el.dataset.animateWidth);
+    requestAnimationFrame(() => requestAnimationFrame(() => { el.style.width = `${target}%`; }));
+  });
+  scope.querySelectorAll("[data-animate-pct]").forEach((el) => {
+    const target = parseInt(el.dataset.animatePct, 10);
+    const duration = 500;
+    const start = performance.now();
+    function step(now) {
+      const t = Math.min(1, (now - start) / duration);
+      el.textContent = `${Math.round(target * t)}%`;
+      if (t < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  });
 }
 
 /* --- Week View card (§6) ------------------------------------------- */
@@ -177,7 +227,7 @@ function cardCentre(game) {
     const note = game.status === "live" ? game.statusDetail
       : game.status === "final-pending" ? "Final pending"
       : game.status === "delayed" ? game.statusDetail
-      : ""; /* final: row 1 already carries the date, the pill the state */
+      : ""; /* final: the status pill already carries the state */
     const strong = game.status === "live" || game.status === "delayed" || game.status === "final-pending";
     return `
       <div class="sc-score"><span class="${awayWin ? "win" : ""}">${game.away.score}</span><span class="sc-sep">–</span><span class="${homeWin ? "win" : ""}">${game.home.score}</span></div>
@@ -194,10 +244,8 @@ function cardCentre(game) {
 }
 
 function cardActions(game) {
-  const canVote = game.status === "scheduled" && !isVotingLocked(game) && !getUserVote(game.id);
   switch (game.status) {
     case "scheduled":
-      return `${canVote ? voteButtons(game) : ""}${calendarButton(game)}`;
     case "postponed":
       return calendarButton(game);
     case "cancelled":
@@ -207,36 +255,133 @@ function cardActions(game) {
   }
 }
 
+/* Away reads name-then-logo, home reads logo-then-name — both team
+   blocks pack toward the centre column (see .sc-team.away/.home), so
+   the logo nearest the score/time reads first on each side, pulling
+   the whole row into one matchup rather than two edge-pinned labels. */
 function teamSide(abbr, side, winner) {
   const t = getTeam(abbr);
   const loser = winner && winner !== side ? "loser" : "";
   const logo = `<img src="${t.logo}" alt="${t.name}">`;
   const name = `<span class="sc-team-name">${t.short}</span>`;
-  return `<div class="sc-team ${side} ${loser}">${side === "home" ? name + logo : logo + name}</div>`;
+  return `<div class="sc-team ${side} ${loser}">${side === "home" ? logo + name : name + logo}</div>`;
 }
 
-function renderScheduleCard(game) {
-  const showVotes = game.status !== "cancelled" &&
-    (game.status !== "scheduled" || isVotingLocked(game) || !!getUserVote(game.id));
+/* `i` is the card's position within its date group — used only to
+   stagger the entrance animation (see --stagger in CSS). Only the
+   single next upcoming game (season-wide) renders as the full featured
+   card; every other game renders as a compact row (renderCompactRow) —
+   a different, denser layout, not just a scaled-down copy. */
+function renderScheduleCard(game, i = 0, featured = false) {
+  if (!featured) return renderCompactRow(game, i);
+  const locked = isVotingLocked(game);
+  const userVote = getUserVote(game.id);
+  const canVote = game.status === "scheduled" && !locked && !userVote;
+  const showResults = game.status !== "cancelled" && (game.status !== "scheduled" || locked || !!userVote);
   const actions = cardActions(game);
   const place = [game.venue, game.city].filter(Boolean).join(" · ");
-  return `
-  <div class="schedule-card status-${game.status}" data-game-id="${game.id}">
-    <div class="sc-top">
-      <span class="sc-day">${cardDayLabel(game.scheduledAt)}</span>
-      <span class="sc-status">${STATUS_LABEL[game.status]}</span>
-    </div>
+  const banner = isTomorrow(game.scheduledAt) && game.status === "scheduled"
+    ? `<div class="sc-happening-banner">Happening Tomorrow</div>` : "";
+  const card = `
+  <div class="schedule-card status-${game.status}" data-game-id="${game.id}" style="--stagger:${i};">
     <div class="sc-main">
       ${teamSide(game.away.abbr, "away", game.winner)}
       <div class="sc-center">${cardCentre(game)}</div>
       ${teamSide(game.home.abbr, "home", game.winner)}
     </div>
-    ${showVotes ? voteBar(game) : ""}
+    ${canVote ? votingPanel(game) : ""}
+    ${showResults ? resultsBar(game) : ""}
     <div class="sc-bottom">
       <span class="sc-meta">${place}${broadcastHtml(game.broadcast)}</span>
       ${actions ? `<div class="sc-actions">${actions}</div>` : ""}
     </div>
   </div>`;
+  return banner ? `<div class="schedule-card-group">${banner}${card}</div>` : card;
+}
+
+/* --- Compact row (every game except the single featured one) -------
+   Left: kickoff time/score + broadcaster. Middle: the matchup, away
+   team stacked over home team, left-aligned (not centred — this is a
+   scanning list, not a single hero matchup). Right: voting or results,
+   then the calendar/view action. Team name/time share the featured
+   card's own type sizes (--fs-team/--fs-time) rather than a smaller
+   compact-only scale. */
+function compactTimeOrScore(game) {
+  const scored = SCORED.includes(game.status) && game.away.score !== undefined;
+  if (scored) {
+    const note = game.status === "live" ? game.statusDetail
+      : game.status === "final-pending" ? "Final pending"
+      : game.status === "delayed" ? game.statusDetail : "";
+    return `<span class="cc-clock">${game.away.score}–${game.home.score}</span>${note ? `<span class="cc-note">${note}</span>` : ""}`;
+  }
+  if (game.status === "postponed") return `<span class="cc-clock muted">Postponed</span>`;
+  if (game.status === "cancelled") return `<span class="cc-clock muted">Cancelled</span>`;
+  return `<span class="cc-clock">${kickoffTimeET(game.scheduledAt)}</span>`;
+}
+
+function compactTeamRow(abbr, winner, side) {
+  const t = getTeam(abbr);
+  const market = t.name.replace(t.short, "").trim();
+  const loser = winner && winner !== side ? "loser" : "";
+  return `
+    <div class="cc-team ${loser}">
+      <img src="${t.logo}" alt="">
+      <span class="cc-market">${market}</span>
+      <span class="cc-nick">${t.short}</span>
+    </div>`;
+}
+
+/* A compact "who wins" choice — the whole side is clickable, same
+   handleVoteClick as the featured card's vote-option, just laid out as
+   one slim bordered pill instead of a tall two-box grid. */
+function compactVoteChoice(game) {
+  const away = getTeam(game.away.abbr), home = getTeam(game.home.abbr);
+  return `
+    <div class="cc-vote">
+      <div class="cc-vote-label">Who Wins?</div>
+      <div class="cc-vote-choice">
+        <button type="button" class="cc-vote-side" data-side="away" onclick="handleVoteClick('${game.id}','away')"><img src="${away.logo}" alt="">${away.short}</button>
+        <span class="cc-vote-sep">vs</span>
+        <button type="button" class="cc-vote-side" data-side="home" onclick="handleVoteClick('${game.id}','home')">${home.short}<img src="${home.logo}" alt=""></button>
+      </div>
+    </div>`;
+}
+
+function compactResults(game) {
+  const away = getTeam(game.away.abbr), home = getTeam(game.home.abbr);
+  const { homePct, awayPct } = getVotePercentages(game);
+  return `
+    <div class="cc-results">
+      <div class="cc-results-labels"><span>${away.short} <strong data-animate-pct="${awayPct}">0%</strong></span><span><strong data-animate-pct="${homePct}">0%</strong> ${home.short}</span></div>
+      <div class="cc-results-bar">
+        <div class="cc-results-fill" data-animate-width="${awayPct}" style="width:0%; background:${away.color};"></div>
+        <div class="cc-results-fill" data-animate-width="${homePct}" style="width:0%; background:${home.color};"></div>
+      </div>
+    </div>`;
+}
+
+function renderCompactRow(game, i = 0) {
+  const locked = isVotingLocked(game);
+  const userVote = getUserVote(game.id);
+  const canVote = game.status === "scheduled" && !locked && !userVote;
+  const showVote = game.status !== "cancelled" && (game.status !== "scheduled" || locked || !!userVote);
+  const actions = cardActions(game);
+  const banner = isTomorrow(game.scheduledAt) && game.status === "scheduled"
+    ? `<div class="sc-happening-banner">Happening Tomorrow</div>` : "";
+  const row = `
+  <div class="cc-row status-${game.status}" data-game-id="${game.id}" style="--stagger:${i};">
+    <div class="cc-time">
+      ${compactTimeOrScore(game)}
+      ${broadcastHtml(game.broadcast)}
+    </div>
+    <div class="cc-matchup">
+      ${compactTeamRow(game.away.abbr, game.winner, "away")}
+      ${compactTeamRow(game.home.abbr, game.winner, "home")}
+    </div>
+    <div class="cc-vote-slot">${canVote ? compactVoteChoice(game) : showVote ? compactResults(game) : ""}</div>
+    ${actions ? `<div class="cc-action">${actions}</div>` : ""}
+  </div>`;
+  return banner ? `<div class="schedule-card-group">${banner}${row}</div>` : row;
 }
 
 /* --- Full Season compact row (§8) ---------------------------------- */
@@ -294,26 +439,26 @@ function predictionHtml(game) {
 
 function cardBodyHtml(game) {
   const canVote = game.status === "scheduled" && !isVotingLocked(game) && !getUserVote(game.id);
-  const votes = game.status === "cancelled" ? "" : voteBar(game);
+  const results = game.status === "cancelled" ? "" : resultsBar(game);
   switch (game.status) {
     case "scheduled":
       return `
         <div class="card-bottom"><span>${kickoffTimeET(game.scheduledAt)}${kickoffTimeLocalNote(game.scheduledAt) ? ` · ${kickoffTimeLocalNote(game.scheduledAt)}` : ""}</span><span>${broadcastHtml(game.broadcast) || "TV TBD"}</span></div>
-        ${canVote ? `<div class="sc-actions" style="margin-top:12px;">${voteButtons(game)}</div>` : votes}
+        ${canVote ? votingPanel(game) : results}
         <div class="sc-actions" style="margin-top:12px;">${calendarButton(game)}</div>`;
     case "live":
     case "delayed":
       return `
         <div class="card-bottom"><span class="situation">${game.statusDetail}</span><span>${broadcastHtml(game.broadcast)}</span></div>
-        ${votes}`;
+        ${results}`;
     case "final-pending":
       return `
         <div class="card-bottom"><span class="situation">Final Pending</span><span>${broadcastHtml(game.broadcast)}</span></div>
-        ${votes}`;
+        ${results}`;
     case "final":
       return `
         <div class="card-bottom"><span>${broadcastHtml(game.broadcast)}</span></div>
-        ${votes}${predictionHtml(game)}`;
+        ${results}${predictionHtml(game)}`;
     case "postponed":
       return `
         <div class="card-bottom"><span class="situation">Rescheduled from ${game.rescheduledFrom || "original date"}</span></div>
@@ -341,13 +486,33 @@ function renderGameCard(game) {
   </div>`;
 }
 
-/* Re-render whichever shape this game is currently drawn as. */
+/* Re-render whichever shape this game is currently drawn as. Voting has
+   a two-step feel: an immediate press/checkmark on the option just
+   clicked, then — after a beat — the card swaps to the results view.
+   The vote itself commits (and locks) only at that second step. */
 function handleVoteClick(gameId, side) {
-  if (!castVote(gameId, side)) return;
   const game = getGameById(gameId);
-  document.querySelectorAll(`[data-game-id="${gameId}"]`).forEach((el) => {
-    if (el.classList.contains("schedule-card")) el.outerHTML = renderScheduleCard(game);
-    else if (el.classList.contains("schedule-row")) el.outerHTML = renderScheduleRow(game);
-    else el.outerHTML = renderGameCard(game);
+  if (!game || isVotingLocked(game) || getUserVote(gameId)) return;
+  document.querySelectorAll(`[data-game-id="${gameId}"] .vote-option, [data-game-id="${gameId}"] .cc-vote-side`).forEach((opt) => {
+    const picked = opt.dataset.side === side;
+    opt.classList.toggle("selected", picked);
+    opt.classList.toggle("unselected", !picked);
+    const indicator = opt.querySelector(".vote-indicator");
+    if (picked && indicator) indicator.innerHTML = CHECK_ICON;
   });
+  setTimeout(() => {
+    if (!castVote(gameId, side)) return;
+    const updated = getGameById(gameId);
+    document.querySelectorAll(`[data-game-id="${gameId}"]`).forEach((el) => {
+      if (el.classList.contains("schedule-card")) {
+        const i = parseInt(el.style.getPropertyValue("--stagger"), 10) || 0;
+        el.outerHTML = renderScheduleCard(updated, i, true);
+      } else if (el.classList.contains("cc-row")) {
+        const i = parseInt(el.style.getPropertyValue("--stagger"), 10) || 0;
+        el.outerHTML = renderCompactRow(updated, i);
+      } else if (el.classList.contains("schedule-row")) el.outerHTML = renderScheduleRow(updated);
+      else el.outerHTML = renderGameCard(updated);
+    });
+    animateVoteUI(document);
+  }, 260);
 }

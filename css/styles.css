@@ -104,23 +104,12 @@
 /* Page shell */
 .page { max-width: 1240px; margin: 0 auto; padding: 32px 20px 80px; }
 
-/* Hero banner — stadium photo positioned to the right, with a black
-   fade over the left side so the overlaid title/text stays legible.
-   Swap the image per venue later by changing this one background-image. */
-.hero-banner {
-  position: relative; height: 260px; overflow: hidden;
-  background:
-    linear-gradient(to right, rgba(4,10,20,.95) 0%, rgba(4,10,20,.82) 30%, rgba(4,10,20,.45) 58%, rgba(4,10,20,.05) 85%),
-    url("../assets/hero/stadium-hero.jpg") center right / cover no-repeat,
-    #06111F;
-}
-.hero-banner .hero-overlay {
-  position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center;
-  max-width: 1240px; margin: 0 auto; padding: 0 20px; left: 0; right: 0;
-}
-.hero-banner .hero-title { font-family: var(--font-display); font-weight: 900; font-size: clamp(28px, 4vw, 42px); color: #fff; line-height: 1.05; }
-.hero-banner .hero-sub { font-family: var(--font-ui); font-size: 16px; color: #C8DCF3; margin-top: 8px; }
-@media (max-width: 560px) { .hero-banner { height: 190px; } }
+/* Hero banner — a designed graphic (its own text baked in), swapped for
+   a mobile crop via <picture> at 640px. Natural aspect ratio, no forced
+   height/crop: the image's own height drives the banner's height at
+   every width, so nothing gets cut off. */
+.hero-banner { background: var(--canvas); text-align: center; }
+.hero-banner-img { display: block; width: 100%; height: auto; max-width: 2560px; margin: 0 auto; }
 
 /* Footer — two-toned: blue hero band on top, white body below (site-chrome.css pattern) */
 .site-footer { background: #FFFFFF; font-family: var(--font-ui); }
@@ -152,6 +141,7 @@
 .footer-bottom a { text-decoration: none; color: #7C8996; }
 .footer-bottom a:hover { color: #0A7DFA; }
 @media (max-width: 720px) { .footer-links { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 480px) { .footer-links { grid-template-columns: 1fr; gap: 28px; } }
 
 /* ===========================================================
    Huddle schedule system (final change doc §3-§13)
@@ -159,25 +149,48 @@
    of color tokens, one control language, one card anatomy.
    =========================================================== */
 
-/* §3 Page intro */
+/* §3 Page intro — .hub-header/.hub-sub still used as a plain caption by
+   newsletter-cta.html's editor-preview page; the live Hub's own header
+   copy now lives in .hub-toolbar below. */
 .hub-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin: 0 0 20px; }
 .hub-sub { color: var(--hub-text-muted); font-size: var(--fs-support); }
 
-.hub-controls { display: flex; align-items: center; gap: 12px; }
+/* appearance:none takes the select out of native rendering entirely —
+   left as auto, the browser's own internal text-centering fights with
+   authored padding and reads as uneven top/bottom space. Padding here
+   is the only thing positioning the text, so top/bottom/left/right are
+   each set once and stay predictable. Custom chevron replaces the
+   native arrow this removes. */
 .team-filter-select {
+  appearance: none; -webkit-appearance: none;
   min-height: 44px; border: 1.5px solid var(--ui-border); border-radius: var(--button-radius); background: var(--surface);
-  color: var(--text-navy); font-family: var(--font-ui); font-weight: 700; font-size: var(--fs-support); padding: 0 16px;
+  color: var(--text-navy); font-family: var(--font-ui); font-weight: 700; font-size: var(--fs-support);
+  padding: 10px 36px 10px 14px; line-height: 1;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 10' fill='none'%3E%3Cpath d='M14.98 1.14 7.98 7.14.98 1.14' stroke='%2357626D' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 14px center; background-size: 11px 7px;
+  transition: border-color .15s var(--motion-standard);
 }
+.team-filter-select:hover { border-color: var(--accent); }
 
-/* §7 One control language — segmented control for the view switch.
+/* §6/§7 Consolidated toolbar — view switch (left), week navigation
+   (centre), team filter + timezone note (right), all in one sticky row. */
+.hub-toolbar {
+  display: flex; align-items: center; gap: 16px; margin-bottom: 28px;
+  padding: 10px 0; background: var(--canvas);
+  position: sticky; top: 69px; z-index: 50;
+}
+.toolbar-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+
+/* One control language — segmented control for the view switch.
    Pills are reserved for exactly this and for status labels (§12). */
 .view-toggle {
-  display: inline-flex; gap: 4px; margin-bottom: 20px; padding: 4px;
-  background: var(--ui-divider); border-radius: 999px;
+  display: inline-flex; gap: 4px; padding: 4px; flex-shrink: 0;
+  background: var(--ui-divider); border: 1.5px solid var(--ui-border); border-radius: var(--radius-md);
 }
 .view-toggle button {
   min-height: 40px; border: none; background: none; color: var(--hub-text-muted);
-  border-radius: 999px; padding: 0 20px; font-family: var(--font-ui); font-weight: 700; font-size: var(--fs-support);
+  border-radius: var(--radius-sm); padding: 0 20px; font-family: var(--font-ui); font-weight: 700; font-size: var(--fs-support);
+  transition: color .15s var(--motion-standard), background-color .15s var(--motion-standard), box-shadow .15s var(--motion-standard);
 }
 .view-toggle button:hover { color: var(--text-navy); }
 .view-toggle button.active { background: var(--surface); color: var(--text-navy); box-shadow: 0 1px 2px rgba(6,17,31,.12); }
@@ -185,63 +198,94 @@
    global :focus-visible ring — restate the ring at this specificity. */
 .view-toggle button:focus-visible { box-shadow: var(--focus-ring); }
 
-/* §7 Week navigation — symmetrical previous / current / next.
-   Desktop shows the surrounding weeks as a flat strip; the arrows always
-   move the selected week, and the strip follows it. Sticky on desktop (§9). */
-.week-nav {
-  display: flex; align-items: center; gap: 8px; margin-bottom: 24px;
-  padding: 8px 0; background: var(--canvas);
-}
-@media (min-width: 769px) {
-  .week-nav { position: sticky; top: 69px; z-index: 50; border-bottom: 1px solid var(--ui-divider); }
-}
+/* Week navigation — symmetrical previous / current / next. The arrows
+   always move the selected week, and the strip follows it. */
+.week-nav { display: flex; align-items: center; gap: 8px; flex: 1 1 auto; justify-content: center; min-width: 0; }
 .week-arrow {
   flex: 0 0 auto; width: 40px; min-height: 44px; border: none; background: none;
   color: var(--accent); display: flex; align-items: center; justify-content: center; border-radius: var(--button-radius);
+  transition: background-color .15s var(--motion-standard);
 }
 .week-arrow .icon-chevron { width: 10px; height: 16px; }
 .week-arrow:hover { background: var(--ui-divider); }
 .week-arrow:disabled { color: var(--ui-border); background: none; cursor: default; }
-.week-strip { flex: 1 1 auto; display: grid; grid-template-columns: repeat(5, 1fr); }
-.week-tab { background: none; border: none; padding: 4px 8px; cursor: pointer; text-align: center; border-radius: var(--radius-sm); }
-.week-tab .wt-num {
-  display: block; font-family: var(--font-ui); font-weight: 700; font-size: var(--fs-label);
-  letter-spacing: .04em; text-transform: uppercase; color: var(--hub-text-muted);
+.week-strip { display: flex; gap: 32px; min-width: 0; }
+.week-tab {
+  background: none; border: none; padding: 6px 4px; cursor: pointer; text-align: center; min-width: 68px;
+  border-radius: var(--radius-md);
 }
-.week-tab .wt-range { display: block; font-size: var(--fs-meta); color: var(--hub-text-muted); margin-top: 2px; }
-.week-tab:hover .wt-num, .week-tab:hover .wt-range { color: var(--text-navy); }
+.week-tab .wt-num {
+  display: block; font-family: var(--font-ui); font-weight: 700; font-size: 15px;
+  letter-spacing: .04em; text-transform: uppercase; color: var(--hub-text-muted);
+  transition: color .15s var(--motion-standard);
+}
+.week-tab .wt-range { display: block; font-family: var(--font-interface); font-size: 13px; color: var(--hub-text-muted); margin-top: 3px; transition: color .15s var(--motion-standard); }
+.week-tab:hover:not(.active) .wt-num, .week-tab:hover:not(.active) .wt-range { color: var(--text-navy); }
+/* Active week is just darker, weightier text — no box/pill treatment,
+   stays clean against the toolbar. */
 .week-tab.active .wt-num, .week-tab.active .wt-range { color: var(--text-navy); font-weight: 800; }
 
-/* §3/§8 Week heading + date range */
+/* §8 Week heading + date range (Full Season) */
 .week-group { margin-bottom: 32px; }
 .week-heading {
   display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px;
   font-family: var(--font-display); font-weight: 900; font-size: var(--fs-section); color: var(--text-navy);
 }
-.week-heading .wh-range { font-family: var(--font-ui); font-weight: 400; font-size: var(--fs-meta); color: var(--hub-text-muted); }
-.date-heading {
-  font-family: var(--font-ui); font-weight: 700; font-size: var(--fs-label); letter-spacing: .06em;
-  text-transform: uppercase; color: var(--hub-text-muted); margin-bottom: 12px;
-}
+.week-heading .wh-range { font-family: var(--font-interface); font-weight: 500; font-size: var(--fs-meta); color: var(--hub-text-muted); }
 
-/* Week-change transition (§9) — quick enough not to delay the data */
-.schedule-list { display: flex; flex-direction: column; gap: 12px; animation: weekIn .18s var(--motion-standard); }
-@keyframes weekIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .schedule-list { animation: none; } }
+/* Date grouping (Week View) — the date now appears once, above each
+   group of games sharing it, instead of repeating inside every card. */
+.date-group { margin-bottom: 32px; }
+.date-heading {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 14px;
+  font-family: var(--font-ui); font-weight: 700; font-size: var(--fs-label); letter-spacing: .08em;
+  text-transform: uppercase; color: var(--hub-text-muted);
+}
+.date-heading .dh-count { font-family: var(--font-interface); font-weight: 500; letter-spacing: normal; text-transform: none; }
+
+/* View/week change — a quick crossfade + directional slide (§9); a new
+   element is created on every render, so the animation always restarts. */
+.schedule-list { display: flex; flex-direction: column; gap: 16px; }
+.view-fade { animation: viewFade .2s var(--motion-standard); }
+@keyframes viewFade { from { opacity: 0; transform: translateX(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .view-fade { animation: none; } }
+
+/* A same-width banner floating just above a card, its own rounded-top
+   block with a gap before the card starts — used to call out something
+   about that one game (e.g. "Happening Tomorrow") without touching the
+   card's own anatomy. */
+.schedule-card-group { display: flex; flex-direction: column; }
+.sc-happening-banner {
+  background: var(--ui-divider); color: var(--hub-text-muted); text-align: center;
+  font-family: var(--font-ui); font-weight: 600; font-size: 13px; letter-spacing: .02em;
+  padding: 10px 20px;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+/* Flush against the card below — no gap, no rounded corners where the
+   two meet, so it reads as one connected block. */
+.sc-happening-banner + .schedule-card,
+.sc-happening-banner + .cc-row {
+  border-top-left-radius: 0; border-top-right-radius: 0;
+}
 
 /* ===========================================================
    §6 Game card — one anatomy for every state
-   row 1: day/date (left) · status (right)
-   row 2: away team · time or score · home team
+   row 1: status pill (right)
+   row 2: away team · time or score · home team — pulled toward centre
    row 3: venue + broadcast (left) · actions (right)
    =========================================================== */
 .schedule-card {
   position: relative; background: var(--surface);
   border: 1px solid var(--ui-border); border-radius: var(--radius-lg);
-  box-shadow: 0 4px 16px rgba(6,17,31,.06), 0 1px 3px rgba(6,17,31,.04);
-  padding: 20px; --status-color: var(--neutral-status);
+  box-shadow: 0 2px 10px rgba(6,17,31,.035), 0 1px 2px rgba(6,17,31,.03);
+  padding: 26px; --status-color: var(--neutral-status);
+  transition: transform .18s var(--motion-standard), box-shadow .18s var(--motion-standard), border-color .18s var(--motion-standard);
+  animation: cardIn .32s var(--motion-standard) backwards;
+  animation-delay: calc(var(--stagger, 0) * 45ms);
 }
-.schedule-card:hover { border-color: var(--ui-border); box-shadow: 0 6px 20px rgba(6,17,31,.10), 0 1px 3px rgba(6,17,31,.05); }
+@keyframes cardIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .schedule-card { animation: none; } }
+.schedule-card:hover { transform: translateY(-2px); border-color: var(--ui-border); box-shadow: 0 6px 16px rgba(6,17,31,.06), 0 2px 4px rgba(6,17,31,.04); }
 .schedule-card.status-live { --status-color: var(--live); }
 .schedule-card.status-final { --status-color: var(--success); }
 .schedule-card.status-final-pending,
@@ -249,45 +293,47 @@
 .schedule-card.status-postponed { --status-color: var(--warn); }
 .schedule-card.status-cancelled { --status-color: var(--neutral-status); }
 
-.sc-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
-.sc-day { font-family: var(--font-ui); font-weight: 700; font-size: var(--fs-label); letter-spacing: .06em; text-transform: uppercase; color: var(--hub-text-muted); }
-
-/* Status label — pill, per §12's carve-out. Never color alone (§13): the
-   word is always there next to the dot. */
-.sc-status {
-  display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px;
-  font-family: var(--font-ui); font-weight: 700; font-size: var(--fs-label); letter-spacing: .04em; text-transform: uppercase;
-  color: var(--status-color); background: var(--ui-divider);
-}
-.sc-status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
-.status-live .sc-status { background: var(--live-soft); }
-.status-live .sc-status::before { animation: pulse 1.4s infinite; }
-.status-final-pending .sc-status, .status-delayed .sc-status, .status-postponed .sc-status { background: var(--warn-soft); }
 @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.35;} }
 
-/* Row 2 — teams flank the time/score, aligned identically on every card */
-.sc-main { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; }
-.sc-team { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.sc-team.home { justify-content: flex-end; }
-.sc-team img { width: 36px; height: 36px; object-fit: contain; flex-shrink: 0; }
-.sc-team-name { font-family: var(--font-ui); font-weight: 700; font-size: var(--fs-team); color: var(--text-navy); }
+/* Row 2 — both team blocks pack toward the centre column (away's right
+   edge, home's left edge) so the card reads as one matchup rather than
+   two labels pinned to the outer edges. Away is name-then-logo and home
+   is logo-then-name, so on each side the logo — the biggest, most
+   identifiable element — sits nearest the score. */
+.sc-main { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 20px; }
+.sc-team { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.sc-team.away { justify-content: flex-end; }
+.sc-team.home { justify-content: flex-start; }
+.sc-team img { width: 64px; height: 64px; object-fit: contain; flex-shrink: 0; transition: transform .15s var(--motion-standard); }
+.sc-team img:hover { transform: scale(1.04); }
+.sc-team-name { font-family: var(--font-ui); font-weight: 800; font-size: var(--fs-team); color: var(--text-navy); line-height: 1.15; }
 .sc-team.loser .sc-team-name { color: var(--hub-text-muted); }
 
-.sc-center { text-align: center; min-width: 96px; }
-.sc-time { font-family: var(--font-ui); font-weight: 700; font-size: var(--fs-time); color: var(--text-navy); line-height: 1.1; white-space: nowrap; }
+.sc-center { text-align: center; min-width: 120px; }
+.sc-time {
+  font-family: var(--font-ui); font-weight: 800; font-size: var(--fs-time); color: var(--text-navy);
+  line-height: 1.1; white-space: nowrap; font-variant-numeric: tabular-nums;
+}
 .sc-time.muted { color: var(--hub-text-muted); text-decoration: line-through; }
-.sc-score { font-family: var(--font-display); font-weight: 900; font-size: 30px; color: var(--text-navy); line-height: 1; white-space: nowrap; }
-.sc-score .sc-sep { color: var(--ui-border); margin: 0 6px; }
+.sc-score {
+  font-family: var(--font-display); font-weight: 900; font-size: var(--fs-score); color: var(--text-navy);
+  line-height: 1; white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.sc-score .sc-sep { color: var(--ui-border); margin: 0 8px; }
 .sc-score .win { color: var(--accent); }
-.sc-center-note { display: block; font-size: var(--fs-meta); color: var(--hub-text-muted); margin-top: 4px; }
+.sc-center-note { display: block; font-family: var(--font-ui); font-weight: 400; font-size: var(--fs-local); color: var(--hub-text-muted); margin-top: 6px; }
 .sc-center-note.strong { color: var(--status-color); font-weight: 700; }
 
-/* Row 3 — metadata left, actions right */
+/* Row 3 — metadata left, actions right. Separated from what's above by
+   spacing alone, no divider line. */
 .sc-bottom {
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
-  margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--ui-divider);
+  margin-top: 22px;
 }
-.sc-meta { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 8px; font-family: var(--font-ui); font-size: var(--fs-meta); color: var(--hub-text-muted); min-width: 0; }
+.sc-meta {
+  display: inline-flex; align-items: center; flex-wrap: wrap; gap: 8px;
+  font-family: var(--font-ui); font-weight: 400; font-size: var(--fs-meta); line-height: 20px; color: var(--hub-text-muted); min-width: 0;
+}
 
 /* Broadcaster — logo where one exists, the network's name otherwise.
    Capped by height so wordmarks of different aspect ratios still sit on
@@ -298,43 +344,159 @@
 .sc-bcast-show { color: var(--hub-text-muted); }
 .sc-actions { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
 
-/* Voting — a slim line above the actions, team colors in one bar (§5:
-   team color as accent, never a full-card fill) */
-.sc-vote { margin-top: 16px; }
-.vote-bar { display: flex; height: 10px; border-radius: 999px; overflow: hidden; background: var(--ui-divider); }
-.vote-seg:first-child { border-radius: 999px 0 0 999px; }
-.vote-seg:last-child { border-radius: 0 999px 999px 0; }
-.vote-legend { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: var(--fs-meta); font-weight: 700; color: var(--text-navy); }
-.vote-legend span { display: inline-flex; align-items: center; gap: 6px; }
-.vote-count { font-size: var(--fs-meta); font-weight: 400; color: var(--hub-text-muted); text-align: right; margin-top: 4px; }
-
-.vote-btn {
-  min-height: 44px; border: 1.5px solid var(--ui-border); background: var(--surface); color: var(--text-navy);
-  border-radius: var(--button-radius); padding: 0 14px; font-family: var(--font-ui); font-weight: 700; font-size: var(--fs-support);
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+/* ===========================================================
+   Voting — two components, team color as a border/tint accent only,
+   never a solid fill (so no team's brand color visually dominates):
+     .sc-vote-panel  — open, pre-kickoff "Who Wins?" choice
+     .sc-vote-results — closed / after voting — a percentage bar
+       attached to each team, with animated fill + count-up (game-card.js)
+   =========================================================== */
+.sc-vote-panel { margin-top: 20px; }
+.vote-heading {
+  font-family: var(--font-ui); font-weight: 800; font-size: var(--fs-label); letter-spacing: .08em;
+  text-transform: uppercase; color: var(--hub-text-muted); margin-bottom: 10px; text-align: center;
 }
-.vote-btn:hover { border-color: var(--accent); color: var(--accent); }
-.vote-btn img { width: 20px; height: 20px; object-fit: contain; }
+.vote-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.vote-option {
+  display: flex; flex-direction: column; align-items: center; gap: 10px; min-height: 96px;
+  padding: 16px 12px; border: 1.5px solid var(--ui-border); border-radius: var(--radius-md);
+  background: var(--surface); position: relative;
+  transition: border-color .15s var(--motion-standard), background-color .15s var(--motion-standard), transform .1s var(--motion-standard), opacity .2s var(--motion-standard);
+}
+.vote-option:hover { border-color: var(--team-color, var(--accent)); background: var(--ui-divider); }
+.vote-option:active { transform: scale(.98); }
+.vote-option img { width: 40px; height: 40px; object-fit: contain; }
+.vote-option-name { font-family: var(--font-ui); font-weight: 700; font-size: var(--fs-support); color: var(--text-navy); text-align: center; }
+/* Invisible until picked — an empty ring on every unselected option
+   read as an unfinished placeholder rather than a deliberate control. */
+.vote-indicator {
+  position: absolute; top: 10px; right: 10px; width: 18px; height: 18px; border-radius: 50%;
+  border: 1.5px solid transparent; background: transparent;
+  transition: background-color .15s var(--motion-standard), border-color .15s var(--motion-standard);
+}
+.vote-option.selected {
+  border-color: var(--team-color); background: color-mix(in srgb, var(--team-color) 14%, white);
+}
+.vote-option.selected .vote-indicator {
+  background: var(--team-color); border-color: var(--team-color); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+}
+.vote-option.selected .vote-indicator svg { width: 10px; height: 8px; }
+.vote-option.unselected { opacity: .55; }
 
-/* Team-colored vote buttons. The fill and the label color are set
-   inline from the team's brand color (the label is picked for contrast
-   against that fill), and the logo sits on a white chip so marks that
-   share their team's color stay visible on it. */
-.vote-btn-team { border-width: 1.5px; }
-.vote-btn-team:hover { filter: brightness(1.12); border-color: inherit; color: inherit; }
-.vote-btn-team img { background: #fff; border-radius: 50%; padding: 2px; box-sizing: content-box; }
+.sc-vote-results { margin-top: 20px; }
+.vote-summary { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-top: 10px; }
+.vote-summary.no-pick { justify-content: center; }
+.vote-pick { font-family: var(--font-ui); font-weight: 400; font-size: var(--fs-meta); color: var(--hub-text-muted); }
+.vote-pick strong { color: var(--text-navy); font-weight: 700; }
+.results-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.results-team { display: flex; align-items: center; gap: 8px; opacity: .7; transition: opacity .2s var(--motion-standard); }
+.results-team.winning { opacity: 1; }
+.results-team img { width: 22px; height: 22px; object-fit: contain; }
+.results-name { font-family: var(--font-ui); font-weight: 700; font-size: var(--fs-support); color: var(--text-navy); }
+.results-pct { font-family: var(--font-display); font-weight: 900; font-size: 20px; color: var(--text-navy); font-variant-numeric: tabular-nums; }
+.results-bar { display: flex; height: 12px; border-radius: 999px; overflow: hidden; background: var(--ui-divider); }
+.results-fill { height: 100%; transition: width .5s var(--motion-smooth); }
+.results-fill.away { border-radius: 999px 0 0 999px; }
+.results-fill.home { border-radius: 0 999px 999px 0; }
+.vote-count { font-family: var(--font-ui); font-size: 12px; font-weight: 400; color: var(--hub-text-muted); white-space: nowrap; }
+/* Live games keep the score as the card's focal point — results read
+   visually secondary, not competing for attention. */
+.sc-vote-results.is-secondary { opacity: .85; }
+.sc-vote-results.is-secondary .results-pct { font-size: 16px; }
+
+/* ===========================================================
+   Compact row — every game except the single next-upcoming one.
+   Left-aligned: time/broadcast, then the matchup (away team stacked
+   over home team). Right-aligned: voting/results, then the action.
+   Team name and time reuse the featured card's own type sizes
+   (--fs-team/--fs-time) rather than a smaller compact-only scale.
+   =========================================================== */
+.cc-row {
+  display: flex; align-items: center; gap: 24px;
+  padding: 18px 20px; background: var(--surface);
+  border: 1px solid var(--ui-border); border-radius: var(--radius-lg);
+  box-shadow: 0 2px 10px rgba(6,17,31,.035), 0 1px 2px rgba(6,17,31,.03);
+  transition: border-color .18s var(--motion-standard), box-shadow .18s var(--motion-standard);
+  animation: cardIn .32s var(--motion-standard) backwards;
+  animation-delay: calc(var(--stagger, 0) * 45ms);
+}
+@media (prefers-reduced-motion: reduce) { .cc-row { animation: none; } }
+.cc-row:hover { border-color: var(--ui-border); box-shadow: 0 6px 16px rgba(6,17,31,.06), 0 2px 4px rgba(6,17,31,.04); }
+
+.cc-time { flex: 0 0 auto; display: flex; flex-direction: column; gap: 4px; min-width: 84px; }
+.cc-clock {
+  font-family: var(--font-ui); font-weight: 800; font-size: var(--fs-time); color: var(--text-navy);
+  line-height: 1.1; white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.cc-clock.muted { color: var(--hub-text-muted); }
+.cc-note { display: block; font-family: var(--font-ui); font-weight: 400; font-size: 12px; color: var(--status-color); margin-top: 2px; }
+.cc-time .sc-bcast { margin-top: 2px; }
+.cc-time .sc-bcast::before { content: none; }
+
+.cc-matchup { flex: 0 0 auto; display: flex; flex-direction: column; gap: 10px; min-width: 190px; }
+.cc-team { display: flex; align-items: center; gap: 10px; }
+.cc-team img { width: 32px; height: 32px; object-fit: contain; flex-shrink: 0; }
+.cc-market { font-family: var(--font-ui); font-weight: 400; font-size: 14px; color: var(--hub-text-muted); }
+.cc-nick { font-family: var(--font-ui); font-weight: 800; font-size: var(--fs-team); color: var(--text-navy); }
+.cc-team.loser .cc-nick { color: var(--hub-text-muted); }
+
+/* Fixed width, not flex-grown — every row's vote/results block is the
+   same size regardless of how much room its own matchup text takes, so
+   the bars line up and read as one consistent scale down the list.
+   .cc-vote (open choice) and .cc-results (locked/voted) are separate
+   elements — both need the same fixed size, not just whichever renders
+   first in a given row. */
+.cc-vote-slot { flex: 1 1 auto; display: flex; justify-content: flex-end; min-width: 0; }
+.cc-vote, .cc-results { flex: 0 0 320px; width: 320px; }
+.cc-vote { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.cc-vote-label {
+  font-family: var(--font-ui); font-weight: 800; font-size: var(--fs-label); letter-spacing: .08em;
+  text-transform: uppercase; color: var(--hub-text-muted);
+}
+.cc-vote-choice {
+  display: flex; align-items: center; width: 100%;
+  border: 1.5px solid var(--ui-border); border-radius: var(--button-radius); overflow: hidden;
+}
+.cc-vote-side {
+  flex: 1 1 0; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px;
+  background: var(--surface); color: var(--text-navy); font-family: var(--font-ui); font-weight: 700; font-size: 13px;
+  transition: background-color .15s var(--motion-standard);
+}
+.cc-vote-side:hover { background: var(--ui-divider); }
+.cc-vote-side img { width: 20px; height: 20px; object-fit: contain; }
+.cc-vote-side.selected { background: var(--accent-light); color: var(--accent); }
+.cc-vote-side.unselected { opacity: .55; }
+.cc-vote-sep {
+  flex: 0 0 auto; padding: 0 10px; align-self: stretch; display: flex; align-items: center;
+  font-family: var(--font-ui); font-weight: 700; font-size: 11px; text-transform: uppercase; color: var(--hub-text-muted);
+  border-left: 1px solid var(--ui-border); border-right: 1px solid var(--ui-border); background: var(--ui-divider);
+}
+.cc-results { display: flex; flex-direction: column; gap: 6px; }
+.cc-results-labels { display: flex; justify-content: space-between; font-family: var(--font-ui); font-weight: 700; font-size: 13px; color: var(--text-navy); }
+.cc-results-labels strong { font-family: var(--font-display); font-weight: 900; font-variant-numeric: tabular-nums; }
+.cc-results-bar { display: flex; height: 8px; border-radius: 999px; overflow: hidden; background: var(--ui-divider); }
+.cc-results-fill { height: 100%; transition: width .5s var(--motion-smooth); }
+.cc-results-fill:first-child { border-radius: 999px 0 0 999px; }
+.cc-results-fill:last-child { border-radius: 0 999px 999px 0; }
+
+.cc-action { flex: 0 0 auto; }
+.cc-action .btn { min-height: 40px; font-size: 13px; padding: 0 14px; }
 
 /* Primary + secondary actions */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px;
   border-radius: var(--button-radius); padding: 0 16px; font-family: var(--font-ui); font-weight: 700;
   font-size: var(--fs-support); text-decoration: none; border: 1.5px solid transparent; white-space: nowrap;
+  transition: background-color .15s var(--motion-standard), border-color .15s var(--motion-standard), color .15s var(--motion-standard), transform .1s var(--motion-standard);
 }
+.btn:active { transform: scale(.97); }
 .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 .btn-secondary { background: var(--surface); border-color: var(--ui-border); color: var(--text-navy); }
 .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
-.btn-added { background: var(--tag-green); border-color: var(--tag-green); color: var(--tag-green-text); }
+.btn-added { background: var(--tag-green); border-color: var(--tag-green); color: var(--tag-green-text); animation: addedPop .3s var(--motion-standard); }
+@keyframes addedPop { 0% { transform: scale(1); } 40% { transform: scale(1.04); } 100% { transform: scale(1); } }
 .btn .btn-icon { width: 16px; height: 16px; flex-shrink: 0; }
 
 /* ===========================================================
@@ -373,26 +535,47 @@
    =========================================================== */
 @media (max-width: 1024px) {
   .season-head, .schedule-row { grid-template-columns: 92px minmax(0,1fr) 96px 104px 128px; gap: 12px; }
-  .sc-team img { width: 32px; height: 32px; }
+  .sc-team img { width: 56px; height: 56px; }
 }
 @media (max-width: 768px) {
-  /* Week nav collapses to previous / current / next */
-  .week-strip { grid-template-columns: 1fr; }
-  .week-tab:not(.active) { display: none; }
+  /* Toolbar stacks: view switch, then week nav, then filter + timezone —
+     each full width instead of squeezed into one row. */
+  .hub-toolbar { flex-direction: column; align-items: stretch; gap: 12px; }
+  .view-toggle { align-self: center; }
+  .week-nav { width: 100%; }
+  .toolbar-right { width: 100%; justify-content: center; }
+  .team-filter-select { flex: 1 1 auto; }
+
+  /* Week nav collapses to previous / current / next, keyed off each
+     tab's data-adjacent attribute (js/hub.js) rather than array
+     position, since position shifts near season edges. */
+  .week-tab { display: none; }
+  .week-tab[data-adjacent="prev"], .week-tab[data-adjacent="current"], .week-tab[data-adjacent="next"] { display: block; }
   .week-tab.active .wt-num { font-size: var(--fs-support); }
 
-  /* Cards stack: teams, time/status, metadata, then a dominant CTA */
-  .schedule-card { padding: 20px 16px 16px; }
-  .sc-main { grid-template-columns: 1fr; gap: 12px; text-align: left; }
-  /* Stacked, both teams read logo-then-name down a single left edge
-     (the home side's markup is name-then-logo for the desktop mirror). */
-  /* row-reverse flips main-start to the right, so flex-end is what packs
-     the pair against the card's left edge. */
-  .sc-team.home { flex-direction: row-reverse; justify-content: flex-end; }
-  .sc-center { text-align: left; min-width: 0; }
+  /* Featured card stacks: teams, time/status, metadata, then a dominant CTA. */
+  .schedule-card { padding: 22px 18px 18px; }
+  .schedule-card .sc-main { grid-template-columns: 1fr; gap: 14px; text-align: left; }
+  /* Stacked, both teams read logo-then-name down a single left edge.
+     Home is already logo-then-name natively; away is name-then-logo
+     (desktop mirror), so only away needs the row-reverse flip here. */
+  .schedule-card .sc-team.away { flex-direction: row-reverse; justify-content: flex-end; }
+  .schedule-card .sc-team.home { justify-content: flex-start; }
+  .schedule-card .sc-center { text-align: left; min-width: 0; }
   .sc-bottom { flex-direction: column; align-items: stretch; gap: 12px; }
   .sc-actions { flex-direction: column; align-items: stretch; }
-  .sc-actions .btn, .vote-btn { width: 100%; }
+  .sc-actions .btn { width: 100%; }
+
+  /* Compact row: time+matchup stay side by side (still compact enough
+     to fit), vote/results and the action drop to their own full-width
+     lines below rather than squeezing into the same row. */
+  .cc-row { flex-wrap: wrap; gap: 12px; padding: 14px 16px; }
+  .cc-matchup { flex: 1 1 auto; min-width: 0; }
+  .cc-vote-slot { flex: 1 1 100%; order: 3; justify-content: flex-start; }
+  .cc-vote, .cc-results { flex-basis: auto; width: 100%; }
+  .cc-vote { align-items: stretch; }
+  .cc-action { flex: 1 1 100%; order: 4; }
+  .cc-action .btn { width: 100%; }
 
   /* Season rows stack rather than squeezing five columns */
   .season-head { display: none; }
@@ -400,7 +583,7 @@
   .sr-date { grid-column: 1 / -1; }
   .sr-time { text-align: right; }
   .sr-action { grid-column: 1 / -1; justify-self: stretch; }
-  .sr-action .btn { width: 100%; }
+  .sr-action .btn { width: 100%; min-height: 44px; }
 }
 
 /* Shared states (§13) — loading/empty/error all use one language */

@@ -13,6 +13,7 @@ function hydrateEmbed(el) {
     el.innerHTML = game
       ? `<div class="game-grid" style="max-width:340px;">${renderGameCard(game)}</div>`
       : `<div class="empty-state"><strong>Game not found</strong>${gameId}</div>`;
+    animateVoteUI(el);
     track("embed_interaction", { type: "game", game_id: gameId });
     return;
   }
@@ -20,6 +21,7 @@ function hydrateEmbed(el) {
   if (week) {
     const games = getGamesForWeek(Number(week));
     el.innerHTML = `<div class="game-grid">${games.map(renderGameCard).join("")}</div>`;
+    animateVoteUI(el);
     track("embed_interaction", { type: "week", week: Number(week) });
     return;
   }
@@ -29,6 +31,7 @@ function hydrateEmbed(el) {
     el.innerHTML = games.length
       ? `<div class="game-grid" style="max-width:340px;">${games.map(renderGameCard).join("")}</div>`
       : `<div class="empty-state"><strong>No upcoming games</strong>${getTeam(team).name} has nothing scheduled.</div>`;
+    animateVoteUI(el);
     track("embed_interaction", { type: "team", team });
   }
 }

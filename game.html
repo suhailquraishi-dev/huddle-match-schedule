@@ -6,9 +6,9 @@
 <title>Game — NFL Schedule Hub</title>
 <link rel="icon" href="assets/logos/favicon-es.ico">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/tokens.css?v=1788953415">
-<link rel="stylesheet" href="css/styles.css?v=1788953415">
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700;800;900&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/tokens.css?v=1789032729">
+<link rel="stylesheet" href="css/styles.css?v=1789032729">
 </head>
 <body>
 
@@ -252,7 +252,7 @@
 
 <div class="modal-backdrop" id="scheduleModal">
   <div class="modal">
-    <h4>Add to Schedule</h4>
+    <h4>Remind Me</h4>
     <button class="modal-option" id="optGoogle">Google Calendar <span><svg class="icon-chevron" viewBox="0 0 16 10" fill="none" aria-hidden="true"><path d="M14.98 1.14 7.98 7.14.98 1.14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
     <button class="modal-option" id="optIcs">Apple / Outlook (.ics) <span><svg class="icon-chevron" viewBox="0 0 16 10" fill="none" aria-hidden="true"><path d="M14.98 1.14 7.98 7.14.98 1.14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
     <button class="modal-option" id="optCopy">Copy event link <span><svg class="icon-chevron" viewBox="0 0 16 10" fill="none" aria-hidden="true"><path d="M14.98 1.14 7.98 7.14.98 1.14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
@@ -260,11 +260,11 @@
   </div>
 </div>
 
-<script src="js/data.js?v=1788953415"></script>
-<script src="js/voting.js?v=1788953415"></script>
-<script src="js/analytics.js?v=1788953415"></script>
-<script src="js/game-card.js?v=1788953415"></script>
-<script src="js/common.js?v=1788953415"></script>
+<script src="js/data.js?v=1789032729"></script>
+<script src="js/voting.js?v=1789032729"></script>
+<script src="js/analytics.js?v=1789032729"></script>
+<script src="js/game-card.js?v=1789032729"></script>
+<script src="js/common.js?v=1789032729"></script>
 <script>
   document.addEventListener("DOMContentLoaded", () => {
     const id = new URLSearchParams(location.search).get("id");
@@ -275,6 +275,7 @@
       return;
     }
     root.innerHTML = renderGameCard(game);
+    animateVoteUI(root);
     track("match_center_viewed", { game_id: game.id, state: game.status });
   });
 </script>

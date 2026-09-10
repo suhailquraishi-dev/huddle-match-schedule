@@ -282,3 +282,13 @@ function getUpcomingGamesForTeam(abbr, limit = 3, now = new Date()) {
     .sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt))
     .slice(0, limit);
 }
+
+/* The single next game to be played, season-wide — Week View features
+   this one as a big card and renders every other game compact. Only
+   "scheduled"/"postponed" games are eligible (live is happening now,
+   not "next"; final/cancelled are done). */
+function getNextUpcomingGame(now = new Date()) {
+  return GAMES
+    .filter((g) => (g.status === "scheduled" || g.status === "postponed") && new Date(g.scheduledAt) >= now)
+    .sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt))[0];
+}

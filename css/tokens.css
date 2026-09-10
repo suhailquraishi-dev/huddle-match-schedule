@@ -25,7 +25,7 @@
 
 :root {
   --white: #FFFFFF;
-  --bg-page: #E9EBEE;   /* alias of --canvas, kept for the ES chrome */
+  --bg-page: #F1F2F4;   /* alias of --canvas, kept for the ES chrome */
   --bg-panel: #FFFFFF;  /* alias of --surface */
   --bg-canvas: #F2F8FF;
   --bg-canvas-soft: #F1F8FF;
@@ -53,23 +53,29 @@
   --font-ui: 'Roboto Condensed', 'Roboto', Arial, sans-serif;
   --font-heading: 'Roboto Condensed', 'Roboto', Arial, sans-serif;
   --font-display: "FrameUp Acumin", 'Acumin Pro Condensed', 'Arial Narrow', sans-serif;
+  /* Two typographic roles only: Display (Acumin/Roboto Condensed) carries
+     team names, scores and headings; Interface (regular-width Roboto)
+     carries venues, local time, controls and helper text — condensed
+     type at small sizes was reading as cramped for that role. */
+  --font-interface: 'Roboto', Arial, sans-serif;
 
-  /* Type scale (change doc §4) — one locked scale; weights carry
-     hierarchy within the ES two-family system (Acumin display /
-     Roboto Condensed UI). No one-off font sizes per component. */
+  /* Type scale — one locked scale; weights carry hierarchy within the
+     two-family system above. No one-off font sizes per component. */
   --fs-h1: clamp(32px, 4vw, 40px);
   --fs-support: 15px;   /* season line / supporting copy */
   --fs-section: 22px;   /* section + week titles */
-  --fs-team: 18px;      /* team names */
-  --fs-time: 22px;      /* kickoff time / score — the dominant number */
-  --fs-meta: 14px;      /* venue, broadcast, counts */
-  --fs-label: 12px;     /* status + column labels, uppercase */
+  --fs-team: 32px;      /* team names, 800 — the largest text on the page (priority card only) */
+  --fs-time: 28px;      /* kickoff time, 800 */
+  --fs-score: 30px;      /* score, 900 — stays under team-name size */
+  --fs-local: 13px;     /* local-time note, interface, 500 */
+  --fs-meta: 14px;      /* venue, broadcast — interface, 500 */
+  --fs-label: 11px;     /* status + date labels, uppercase, 700 */
 
   /* Semantic UI colors (change doc §5) — every component pulls from
      these rather than declaring its own greys/reds/ambers. */
-  --canvas: #E9EBEE;          /* page background */
+  --canvas: #F1F2F4;          /* page background */
   --surface: #FFFFFF;         /* card surface */
-  --ui-border: #CBD1D9;       /* card + control borders */
+  --ui-border: #DCE1E7;       /* card + control borders */
   --ui-divider: #E3E6EB;      /* light rules, bar tracks */
   --live: #C4160F;            /* semantic red */
   --live-soft: #FBE1E1;
@@ -80,7 +86,7 @@
 
   --radius-sm: 6px;
   --radius-md: 8px;
-  --radius-lg: 8px;
+  --radius-lg: 16px;
   --button-radius: 8px;
   --shadow-sm: 0 19px 28px rgba(0,0,0,0.01);
   --shadow-md: 0 15px 27px rgba(0,0,0,0.1);
@@ -104,7 +110,10 @@ html, body {
 }
 img { max-width: 100%; display: block; }
 a { color: inherit; }
-button { font-family: inherit; cursor: pointer; }
+/* Without this, a <button> keeps native OS chrome (appearance:auto),
+   which can render its own themed border on top of an authored
+   border-color — every custom-styled button in the app needs this. */
+button { font-family: inherit; cursor: pointer; appearance: none; -webkit-appearance: none; background: none; border: none; }
 [hidden] { display: none !important; }
 
 /* Visible keyboard focus everywhere (change doc §9, §13). Pointer users
