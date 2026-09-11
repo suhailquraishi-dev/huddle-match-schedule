@@ -298,16 +298,16 @@
    =========================================================== */
 .schedule-card {
   position: relative; background: var(--surface);
-  border: 1px solid var(--ui-border); border-radius: var(--radius-lg);
+  border-radius: var(--radius-lg);
   box-shadow: 0 10px 28px rgba(6,17,31,.025);
   padding: 26px; --status-color: var(--neutral-status);
-  transition: transform .18s var(--motion-standard), box-shadow .18s var(--motion-standard), border-color .18s var(--motion-standard);
+  transition: transform .18s var(--motion-standard), box-shadow .18s var(--motion-standard);
   animation: cardIn .32s var(--motion-standard) backwards;
   animation-delay: calc(var(--stagger, 0) * 45ms);
 }
 @keyframes cardIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .schedule-card { animation: none; } }
-.schedule-card:hover { transform: translateY(-2px); border-color: var(--ui-border); box-shadow: 0 14px 36px rgba(6,17,31,.05); }
+.schedule-card:hover { transform: translateY(-2px); box-shadow: 0 14px 36px rgba(6,17,31,.05); }
 .schedule-card.status-live { --status-color: var(--live); }
 .schedule-card.status-final { --status-color: var(--success); }
 .schedule-card.status-final-pending,
@@ -389,8 +389,13 @@
 }
 
 @media (max-width: 640px) {
-  .sc-live-matchup { gap: 14px; }
-  .sc-live-logo { width: 56px; height: 56px; }
+  /* The single-row layout (logo/name — score — name/logo) is too wide
+     for a phone screen at any readable size — stack it into three
+     centred rows instead (away team, score, home team) rather than
+     shrinking text until it's unreadable or letting it overflow. */
+  .sc-live-matchup { gap: 12px; }
+  .sc-live-row { flex-direction: column; gap: 10px; }
+  .sc-live-logo { width: 48px; height: 48px; }
   .sc-live-team-name { font-size: 16px; }
   .sc-live-score { font-size: 40px; }
 }
@@ -467,14 +472,14 @@
   position: relative;
   display: flex; align-items: center; gap: 24px;
   padding: 18px 20px; background: var(--surface);
-  border: 1px solid var(--ui-border); border-radius: var(--radius-lg);
+  border-radius: var(--radius-lg);
   box-shadow: 0 10px 28px rgba(6,17,31,.025);
-  transition: border-color .18s var(--motion-standard), box-shadow .18s var(--motion-standard);
+  transition: box-shadow .18s var(--motion-standard);
   animation: cardIn .32s var(--motion-standard) backwards;
   animation-delay: calc(var(--stagger, 0) * 45ms);
 }
 @media (prefers-reduced-motion: reduce) { .cc-row { animation: none; } }
-.cc-row:hover { border-color: var(--ui-border); box-shadow: 0 14px 36px rgba(6,17,31,.05); }
+.cc-row:hover { box-shadow: 0 14px 36px rgba(6,17,31,.05); }
 
 .cc-time { flex: 0 0 auto; display: flex; flex-direction: column; gap: 4px; min-width: 84px; }
 .cc-clock {
@@ -593,6 +598,10 @@
 .vote-anim-layer.is-featured .vote-anim-label { font-size: 14px; }
 .vote-anim-layer.is-featured .vote-anim-logo { width: 72px; height: 72px; }
 .vote-anim-layer.is-featured .vote-anim-name { font-size: 36px; }
+@media (max-width: 640px) {
+  .vote-anim-layer.is-featured .vote-anim-logo { width: 48px; height: 48px; }
+  .vote-anim-layer.is-featured .vote-anim-name { font-size: 24px; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .vote-anim-layer { transition: opacity .18s ease; }
