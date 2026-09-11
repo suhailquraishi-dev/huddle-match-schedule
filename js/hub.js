@@ -14,6 +14,22 @@ let currentView = "week"; // "week" | "season"
 let currentWeek = getCurrentOrNextWeek();
 let currentTeamFilter = "";
 
+/* Weeks already asked the live schedule API to refresh this page load —
+   avoids re-fetching a week every time the viewer navigates back to it.
+   (refreshWeekFromApi() itself never touches score/status/broadcast —
+   see js/data.js — so this only ever freshens time/venue/city.) */
+const weeksRefreshedFromApi = new Set();
+
+function refreshWeekInBackground(week) {
+  if (weeksRefreshedFromApi.has(week)) return;
+  weeksRefreshedFromApi.add(week);
+  refreshWeekFromApi(week).then((changed) => {
+    if (!changed) return;
+    if (currentView === "week" && currentWeek === week) renderWeekView();
+    else if (currentView === "season") renderFullSeason();
+  });
+}
+
 function weekDateRange(week, short = false) {
   const dates = getGamesForWeek(week).map((g) => new Date(g.scheduledAt));
   const min = new Date(Math.min(...dates)), max = new Date(Math.max(...dates));
@@ -127,6 +143,7 @@ function renderWeekView() {
       <div class="schedule-list">${grp.games.map((g, i) => renderScheduleCard(g, i, g.id === featuredId)).join("")}</div>
     </div>`).join("")}</div>`;
   animateVoteUI(root);
+  refreshWeekInBackground(currentWeek);
 }
 
 /* Full Season prioritises scanning: grouped by week, compact rows (§8) */
@@ -147,6 +164,7 @@ function renderFullSeason() {
   root.innerHTML = groups
     ? `<div class="view-fade">${groups}</div>`
     : `<div class="empty-state"><strong>No games</strong>${getTeam(currentTeamFilter).name} has no games this season.</div>`;
+  getWeeks().forEach(refreshWeekInBackground);
 }
 
 function render() {

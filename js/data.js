@@ -1775,3 +1775,127 @@ function getFeaturedGame(now = new Date()) {
     .sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt))[0];
   return live || getNextUpcomingGame(now);
 }
+
+/* ===========================================================
+   Live schedule refresh (ES schedule API, via /api/schedule?week=N —
+   see api/schedule.js; the API key never reaches the browser).
+
+   The API only carries matchup/time/location, not score/status/
+   broadcast — so a refresh only ever updates scheduledAt/venue/city on
+   an EXISTING game (times/venues can move for flex scheduling, or a
+   "TBD" slot can resolve to a real time). It never touches status,
+   score, winner, or broadcast, and never removes a game. If a week's
+   fetch fails for any reason, GAMES simply keeps whatever it already
+   had (the baked-in schedule this file starts with) — the page never
+   depends on this succeeding.
+   =========================================================== */
+
+const NAME_TO_ABBR = Object.fromEntries(Object.entries(TEAMS).map(([abbr, t]) => [t.name, abbr]));
+
+const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/* Converts a wall-clock date/time as observed in `timeZone` to the
+   correct UTC instant — DST-safe (unlike a fixed UTC-4/UTC-5 offset)
+   because it asks the actual IANA tz database (via Intl) what instant
+   produces that wall time, then corrects until the two agree. Two
+   passes always converge for a zone with only one DST transition
+   between them (true for any single wall-clock time). */
+function zonedWallTimeToUtcISO(year, monthIndex, day, hour, minute, timeZone) {
+  const targetAsUtcNumbers = Date.UTC(year, monthIndex, day, hour, minute);
+  let guess = targetAsUtcNumbers;
+  for (let i = 0; i < 2; i++) {
+    const parts = Object.fromEntries(
+      new Intl.DateTimeFormat("en-US", {
+        timeZone, hourCycle: "h23",
+        year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit",
+      }).formatToParts(new Date(guess)).map((p) => [p.type, p.value])
+    );
+    const localOfGuessAsUtcNumbers = Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour, +parts.minute, +parts.second);
+    guess += targetAsUtcNumbers - localOfGuessAsUtcNumbers;
+  }
+  return new Date(guess).toISOString();
+}
+
+/* "Wed, Sep 9, 8:20 PM ET" (no year — the feed gives that separately
+   via the response's top-level `date`) -> UTC ISO string. */
+function parseApiTimeToIso(timeStr, year) {
+  const m = timeStr.match(/([A-Za-z]{3})\s+(\d{1,2}),\s*(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+  if (!m) return null;
+  const [, monAbbr, day, hour12, minute, meridiem] = m;
+  const monthIndex = MONTH_ABBR.findIndex((mo) => mo.toLowerCase() === monAbbr.toLowerCase());
+  if (monthIndex < 0) return null;
+  let hour = parseInt(hour12, 10) % 12;
+  if (meridiem.toUpperCase() === "PM") hour += 12;
+  return zonedWallTimeToUtcISO(year, monthIndex, parseInt(day, 10), hour, parseInt(minute, 10), "America/New_York");
+}
+
+/* "Lumen Field, Seattle, WA" -> { venue: "Lumen Field", city: "Seattle, WA" } */
+function parseApiLocation(locationStr) {
+  const commaIndex = locationStr.indexOf(",");
+  if (commaIndex < 0) return { venue: locationStr, city: "" };
+  return { venue: locationStr.slice(0, commaIndex).trim(), city: locationStr.slice(commaIndex + 1).trim() };
+}
+
+/* "New England Patriots at Seattle Seahawks" -> { awayAbbr: "ne", homeAbbr: "sea" } */
+function parseApiMatchup(matchupStr) {
+  const sep = matchupStr.indexOf(" at ");
+  if (sep < 0) return null;
+  const awayName = matchupStr.slice(0, sep).trim();
+  const homeName = matchupStr.slice(sep + 4).trim();
+  const awayAbbr = NAME_TO_ABBR[awayName];
+  const homeAbbr = NAME_TO_ABBR[homeName];
+  if (!awayAbbr || !homeAbbr) return null;
+  return { awayAbbr, homeAbbr };
+}
+
+function seedVotes(game) {
+  const rand = seededRandom(hashSeed(`votes-${game.id}`));
+  const total = Math.floor(80 + rand() * 900);
+  const homeShare = 0.3 + rand() * 0.4;
+  const home = Math.round(total * homeShare);
+  game.votes = { home, away: Math.max(0, total - home) };
+}
+
+/* Fetches one week from the ES schedule API and merges it into GAMES
+   in place (existing array reference — every function above keeps
+   working against the same GAMES). Resolves quietly (console.warn,
+   no throw) on any failure, since the page must never depend on this. */
+async function refreshWeekFromApi(week) {
+  let payload;
+  try {
+    const res = await fetch(`/api/schedule?week=${week}`);
+    if (!res.ok) throw new Error(`status ${res.status}`);
+    payload = await res.json();
+  } catch (err) {
+    console.warn(`Schedule refresh failed for week ${week}:`, err.message);
+    return false;
+  }
+  const year = payload.date ? new Date(payload.date).getUTCFullYear() : new Date().getFullYear();
+  let changed = false;
+  (payload.nfl || []).forEach((entry) => {
+    const teams = parseApiMatchup(entry.Matchup);
+    const scheduledAt = parseApiTimeToIso(entry.Time, year);
+    if (!teams || !scheduledAt) {
+      console.warn("Schedule refresh: could not parse entry", entry);
+      return;
+    }
+    const { venue, city } = parseApiLocation(entry.Location);
+    const id = `${teams.awayAbbr}-${teams.homeAbbr}-${year}-w${week}`;
+    const existing = getGameById(id);
+    if (existing) {
+      existing.scheduledAt = scheduledAt;
+      existing.venue = venue;
+      existing.city = city;
+    } else {
+      const fresh = {
+        id, week, status: "scheduled", statusDetail: "Scheduled",
+        scheduledAt, venue, city,
+        away: { abbr: teams.awayAbbr }, home: { abbr: teams.homeAbbr },
+      };
+      seedVotes(fresh);
+      GAMES.push(fresh);
+    }
+    changed = true;
+  });
+  return changed;
+}

@@ -1,0 +1,7 @@
+# Local env files — never commit real secrets (DATA_API_KEY etc.)
+.env
+.env.local
+.env*.local
+
+# Vercel local project state
+.vercel
