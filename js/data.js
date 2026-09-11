@@ -1762,3 +1762,16 @@ function getNextUpcomingGame(now = new Date()) {
     .filter((g) => g.status === "scheduled" && new Date(g.scheduledAt) >= now)
     .sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt))[0];
 }
+
+/* The game Week View features as the one big card. A game in progress
+   always wins the slot — it's more urgent than "next up" — so the next
+   scheduled game only gets featured when nothing is live right now. If
+   more than one game is live at once, the earliest-kicked-off one is
+   featured; the rest still render as compact rows with their own
+   "Happening Now" banner. */
+function getFeaturedGame(now = new Date()) {
+  const live = GAMES
+    .filter((g) => g.status === "live")
+    .sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt))[0];
+  return live || getNextUpcomingGame(now);
+}

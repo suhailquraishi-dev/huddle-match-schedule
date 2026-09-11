@@ -40,6 +40,19 @@ function isTomorrow(iso) {
   return new Date(iso).toDateString() === tomorrow.toDateString();
 }
 
+/* Top banner for a card: live games take priority ("Happening Now",
+   with a pulsing red dot) over the tomorrow note, since a game in
+   progress is more urgent than one that's merely next up. */
+function bannerHtml(game) {
+  if (game.status === "live") {
+    return `<div class="sc-happening-banner sc-happening-live"><span class="sc-live-dot"></span>Happening Now</div>`;
+  }
+  if (game.status === "scheduled" && isTomorrow(game.scheduledAt)) {
+    return `<div class="sc-happening-banner">Happening Tomorrow</div>`;
+  }
+  return "";
+}
+
 function ordinalDate(iso) {
   return new Date(iso).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
 }
@@ -131,6 +144,32 @@ function broadcastHtml(broadcast) {
     `<img src="assets/broadcasters/${b.file}.svg" alt="${b.name}" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span hidden>${b.name}</span>`
   ).join("");
   return `<span class="sc-bcast">${logos}${show ? `<span class="sc-bcast-show">${show}</span>` : ""}</span>`;
+}
+
+/* Bare network mark(s), no wrapping dot/name-fallback — for sitting
+   inside a button after its label (e.g. "Watch Game Live [logo]")
+   rather than in the venue/meta line. */
+function broadcastLogoOnly(broadcast) {
+  if (!broadcast) return "";
+  const [networksPart] = broadcast.split("·").map((s) => s.trim());
+  const networks = networksPart.split("/").map((s) => s.trim());
+  const matched = networks.map((n) => BROADCASTERS[n.toLowerCase()]);
+  if (matched.some((b) => !b)) return "";
+  return matched.map((b) =>
+    `<img class="btn-bcast-logo" src="assets/broadcasters/${b.file}.svg" alt="${b.name}" onerror="this.hidden=true">`
+  ).join("");
+}
+
+/* ESPN's statusDetail reads "4th Quarter" / "Halftime" / "OT" while
+   playing — condensed to "Q4" / "HALF" / "OT" for the live scoreboard
+   clock badge. */
+function quarterLabel(detail) {
+  if (!detail) return "Live";
+  const m = detail.match(/(\d+)(st|nd|rd|th)\s*Quarter/i);
+  if (m) return `Quarter ${m[1]}`;
+  if (/halftime/i.test(detail)) return "Halftime";
+  if (/overtime|\bOT\b/i.test(detail)) return "Overtime";
+  return detail;
 }
 
 /* --- Voting ---------------------------------------------------------
@@ -271,6 +310,46 @@ function teamSide(abbr, side, winner) {
   return `<div class="sc-team ${side} ${loser}">${side === "home" ? logo + name : name + logo}</div>`;
 }
 
+/* The featured card when the featured game is live — the original
+   featured-card shell (sc-vote-results / sc-bottom, same as the
+   scheduled-game card) with just the matchup row swapped for the
+   compact centred composition (logo/name/score/quarter) instead of the
+   edge-pinned sc-main layout. Voting always reads as closed here — a
+   game already underway isn't "make your pick" material, showcase mode
+   or not — so resultsBar() always renders, never the vote panel. */
+function renderLiveFeaturedCard(game, i = 0) {
+  const away = getTeam(game.away.abbr), home = getTeam(game.home.abbr);
+  const awayWin = game.winner === "away", homeWin = game.winner === "home";
+  const place = [game.venue, game.city].filter(Boolean).join(" · ");
+  const watchBtn = `<a class="btn btn-secondary" href="game.html?id=${game.id}">Watch Game Live${broadcastLogoOnly(game.broadcast)}</a>`;
+  const banner = bannerHtml(game);
+  const card = `
+  <div class="schedule-card status-live" data-game-id="${game.id}" style="--stagger:${i};">
+    <div class="sc-live-matchup">
+      <div class="sc-live-row">
+        <div class="sc-live-team away">
+          <img class="sc-live-logo" src="${away.logo}" alt="${away.name}">
+          <span class="sc-live-team-name">${away.short}</span>
+        </div>
+        <div class="sc-live-center">
+          <div class="sc-live-score"><span class="${awayWin ? "win" : ""}">${game.away.score}</span><span class="sc-live-sep">–</span><span class="${homeWin ? "win" : ""}">${game.home.score}</span></div>
+        </div>
+        <div class="sc-live-team home">
+          <span class="sc-live-team-name">${home.short}</span>
+          <img class="sc-live-logo" src="${home.logo}" alt="${home.name}">
+        </div>
+      </div>
+      <div class="sc-live-clock">${quarterLabel(game.statusDetail)}</div>
+    </div>
+    ${resultsBar(game)}
+    <div class="sc-bottom">
+      <span class="sc-meta">${place}</span>
+      <div class="sc-actions">${watchBtn}</div>
+    </div>
+  </div>`;
+  return banner ? `<div class="schedule-card-group">${banner}${card}</div>` : card;
+}
+
 /* `i` is the card's position within its date group — used only to
    stagger the entrance animation (see --stagger in CSS). Only the
    single next upcoming game (season-wide) renders as the full featured
@@ -278,6 +357,7 @@ function teamSide(abbr, side, winner) {
    a different, denser layout, not just a scaled-down copy. */
 function renderScheduleCard(game, i = 0, featured = false) {
   if (!featured) return renderCompactRow(game, i);
+  if (game.status === "live") return renderLiveFeaturedCard(game, i);
   /* SHOWCASE MODE: voting stays open regardless of kickoff/game state —
      every card shows the vote options by default, and switches to
      results only once *this browser* has actually voted on it. Revert
@@ -291,8 +371,7 @@ function renderScheduleCard(game, i = 0, featured = false) {
   // const showResults = game.status !== "cancelled" && (game.status !== "scheduled" || locked || !!userVote);
   const actions = cardActions(game);
   const place = [game.venue, game.city].filter(Boolean).join(" · ");
-  const banner = isTomorrow(game.scheduledAt) && game.status === "scheduled"
-    ? `<div class="sc-happening-banner">Happening Tomorrow</div>` : "";
+  const banner = bannerHtml(game);
   const card = `
   <div class="schedule-card status-${game.status}" data-game-id="${game.id}" style="--stagger:${i};">
     <div class="sc-main">
@@ -300,8 +379,7 @@ function renderScheduleCard(game, i = 0, featured = false) {
       <div class="sc-center">${cardCentre(game)}</div>
       ${teamSide(game.home.abbr, "home", game.winner)}
     </div>
-    ${canVote ? votingPanel(game) : ""}
-    ${showResults ? resultsBar(game) : ""}
+    <div class="vote-module">${canVote ? votingPanel(game) : showResults ? resultsBar(game) : ""}</div>
     <div class="sc-bottom">
       <span class="sc-meta">${place}${broadcastHtml(game.broadcast)}</span>
       ${actions ? `<div class="sc-actions">${actions}</div>` : ""}
@@ -379,8 +457,7 @@ function renderCompactRow(game, i = 0) {
   // const canVote = game.status === "scheduled" && !locked && !userVote;
   // const showVote = game.status !== "cancelled" && (game.status !== "scheduled" || locked || !!userVote);
   const actions = cardActions(game);
-  const banner = isTomorrow(game.scheduledAt) && game.status === "scheduled"
-    ? `<div class="sc-happening-banner">Happening Tomorrow</div>` : "";
+  const banner = bannerHtml(game);
   const row = `
   <div class="cc-row status-${game.status}" data-game-id="${game.id}" style="--stagger:${i};">
     <div class="cc-time">
@@ -391,7 +468,7 @@ function renderCompactRow(game, i = 0) {
       ${compactTeamRow(game.away.abbr, game.winner, "away")}
       ${compactTeamRow(game.home.abbr, game.winner, "home")}
     </div>
-    <div class="cc-vote-slot">${canVote ? compactVoteChoice(game) : showVote ? compactResults(game) : ""}</div>
+    <div class="cc-vote-slot vote-module">${canVote ? compactVoteChoice(game) : showVote ? compactResults(game) : ""}</div>
     ${actions ? `<div class="cc-action">${actions}</div>` : ""}
   </div>`;
   return banner ? `<div class="schedule-card-group">${banner}${row}</div>` : row;
@@ -499,6 +576,81 @@ function renderGameCard(game) {
   </div>`;
 }
 
+/* Disables a card's vote buttons the instant a pick is clicked, so a
+   second click can't slip in during the animation. */
+function lockVoteButtons(cardEl) {
+  cardEl.querySelectorAll(".vote-option, .cc-vote-side").forEach((btn) => {
+    btn.disabled = true;
+    btn.style.pointerEvents = "none";
+  });
+}
+
+/* The broadcast-style "sweep in → VOTED FOR {team} → hold → sweep
+   out" confirmation. Takes over the whole `cardEl` (.schedule-card or
+   .cc-row); `slot` is the .vote-module inside it, where the real
+   results markup gets swapped in immediately, hidden behind the
+   opaque animation layer covering the card — the swap itself never
+   paints; the closing wipe's clip-path is what "reveals" the card
+   again. Height is pinned for the sequence's duration so nothing
+   below the card on the page shifts. `prefers-reduced-motion` gets a
+   plain 180ms cross-fade instead. */
+function playVoteConfirmAnimation(cardEl, slot, resultsHtml, team) {
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const prevOverflow = cardEl.style.overflow;
+  cardEl.style.height = `${cardEl.getBoundingClientRect().height}px`;
+  cardEl.style.overflow = "hidden";
+
+  const overlay = document.createElement("div");
+  overlay.className = cardEl.classList.contains("schedule-card") ? "vote-anim-layer is-featured" : "vote-anim-layer";
+  overlay.style.setProperty("--team-color", team.color);
+  cardEl.appendChild(overlay);
+
+  // Swap the vote/results slot's content to the results markup now —
+  // from this point the whole card is hidden behind the opaque
+  // overlay above it, so the swap itself never paints.
+  Array.from(slot.children).forEach((child) => child.remove());
+  const wrap = document.createElement("div");
+  wrap.innerHTML = resultsHtml;
+  while (wrap.firstChild) slot.appendChild(wrap.firstChild);
+  requestAnimationFrame(() => { cardEl.style.height = `${cardEl.scrollHeight}px`; });
+
+  const finish = () => {
+    overlay.remove();
+    cardEl.style.height = "";
+    cardEl.style.overflow = prevOverflow;
+    animateVoteUI(cardEl);
+  };
+
+  if (reduced) {
+    requestAnimationFrame(() => requestAnimationFrame(() => overlay.classList.add("wipe")));
+    overlay.addEventListener("transitionend", finish, { once: true });
+    setTimeout(finish, 400); // fallback if the transition doesn't fire
+    return;
+  }
+
+  overlay.innerHTML = `
+    <div class="vote-anim-line" style="top:36%; width:52%; animation-delay:0ms;"></div>
+    <div class="vote-anim-line" style="top:52%; width:38%; animation-delay:55ms;"></div>
+    <div class="vote-anim-line" style="top:66%; width:46%; animation-delay:105ms;"></div>
+    <div class="vote-anim-content">
+      <span class="vote-anim-label">Voted for</span>
+      <div class="vote-anim-team">
+        <img class="vote-anim-logo" src="${team.logo}" alt="">
+        <span class="vote-anim-name">${team.short}</span>
+      </div>
+    </div>
+    <div class="vote-anim-wipe-line"></div>`;
+  requestAnimationFrame(() => overlay.querySelectorAll(".vote-anim-line").forEach((l) => l.classList.add("play")));
+  setTimeout(() => overlay.querySelector(".vote-anim-label").classList.add("in"), 220);
+  setTimeout(() => overlay.querySelector(".vote-anim-team").classList.add("in"), 300);
+  setTimeout(() => {
+    overlay.classList.add("wipe");
+    overlay.querySelector(".vote-anim-wipe-line").classList.add("play");
+    overlay.addEventListener("transitionend", finish, { once: true });
+    setTimeout(finish, 560); // fallback if the transition doesn't fire
+  }, 1520);
+}
+
 /* Re-render whichever shape this game is currently drawn as. Voting has
    a two-step feel: an immediate press/checkmark on the option just
    clicked, then — after a beat — the card swaps to the results view.
@@ -507,31 +659,34 @@ function handleVoteClick(gameId, side) {
   const game = getGameById(gameId);
   // SHOWCASE MODE — voting stays open regardless of lock state; see castVote().
   if (!game || game.status === "cancelled" || getUserVote(gameId)) return;
-  document.querySelectorAll(`[data-game-id="${gameId}"] .vote-option, [data-game-id="${gameId}"] .cc-vote-side`).forEach((opt) => {
-    const picked = opt.dataset.side === side;
-    opt.classList.toggle("selected", picked);
-    opt.classList.toggle("unselected", !picked);
-    const indicator = opt.querySelector(".vote-indicator");
-    if (picked && indicator) indicator.innerHTML = CHECK_ICON;
+  document.querySelectorAll(`[data-game-id="${gameId}"]`).forEach((cardEl) => {
+    lockVoteButtons(cardEl);
+    cardEl.querySelectorAll(".vote-option, .cc-vote-side").forEach((opt) => {
+      const picked = opt.dataset.side === side;
+      opt.classList.toggle("selected", picked);
+      opt.classList.toggle("unselected", !picked);
+      const indicator = opt.querySelector(".vote-indicator");
+      if (picked && indicator) indicator.innerHTML = CHECK_ICON;
+    });
   });
   setTimeout(() => {
     if (!castVote(gameId, side)) return;
     const updated = getGameById(gameId);
+    const pickedTeam = getTeam(side === "home" ? updated.home.abbr : updated.away.abbr);
     document.querySelectorAll(`[data-game-id="${gameId}"]`).forEach((el) => {
-      /* renderScheduleCard()/renderCompactRow() wrap their own output in
-         a .schedule-card-group when a "Happening Tomorrow" banner
-         applies. If this card is already inside that wrapper, the new
-         (also-wrapped) markup has to replace the wrapper itself, or a
-         second nested wrapper+banner ends up stacked on top of it. */
-      const group = el.parentElement?.classList.contains("schedule-card-group") ? el.parentElement : null;
-      if (el.classList.contains("schedule-card")) {
-        const i = parseInt(el.style.getPropertyValue("--stagger"), 10) || 0;
-        (group || el).outerHTML = renderScheduleCard(updated, i, true);
-      } else if (el.classList.contains("cc-row")) {
-        const i = parseInt(el.style.getPropertyValue("--stagger"), 10) || 0;
-        (group || el).outerHTML = renderCompactRow(updated, i);
-      } else if (el.classList.contains("schedule-row")) el.outerHTML = renderScheduleRow(updated);
-      else el.outerHTML = renderGameCard(updated);
+      // Featured/compact cards carry a .vote-module — the animation
+      // covers the whole card, but only the vote/results slot's
+      // content actually changes (team names, score, banner, venue,
+      // actions never re-render).
+      const slot = el.querySelector(".vote-module");
+      if (slot) {
+        const resultsHtml = el.classList.contains("cc-row") ? compactResults(updated) : resultsBar(updated);
+        playVoteConfirmAnimation(el, slot, resultsHtml, pickedTeam);
+        return;
+      }
+      // Other shapes (Full Season rows, the legacy article-embed card)
+      // have no vote-module to animate in place — full re-render as before.
+      el.outerHTML = el.classList.contains("schedule-row") ? renderScheduleRow(updated) : renderGameCard(updated);
     });
     animateVoteUI(document);
   }, 260);

@@ -108,7 +108,7 @@
    a mobile crop via <picture> at 640px. Natural aspect ratio, no forced
    height/crop: the image's own height drives the banner's height at
    every width, so nothing gets cut off. */
-.hero-banner { background: var(--canvas); text-align: center; }
+.hero-banner { background: var(--canvas); text-align: center; padding-top: 28px; }
 .hero-banner-img { display: block; width: 100%; height: auto; max-width: 2560px; margin: 0 auto; }
 
 /* Footer — two-toned: blue hero band on top, white body below (site-chrome.css pattern) */
@@ -269,12 +269,25 @@
   font-family: var(--font-ui); font-weight: 600; font-size: 13px; letter-spacing: .02em;
   padding: 10px 20px;
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
 }
+.sc-happening-banner.sc-happening-live {
+  background: var(--live-soft); color: var(--live);
+  padding: 12px 20px; font-size: 12px;
+}
+.sc-live-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--live);
+  animation: liveDotPulse 1.6s ease-in-out infinite;
+}
+@keyframes liveDotPulse {
+  0%, 100% { opacity: 1; } 50% { opacity: .35; }
+}
+@media (prefers-reduced-motion: reduce) { .sc-live-dot { animation: none; } }
 /* Flush against the card below — no gap, no rounded corners where the
    two meet, so it reads as one connected block. */
 .sc-happening-banner + .schedule-card,
 .sc-happening-banner + .cc-row {
-  border-top-left-radius: 0; border-top-right-radius: 0;
+  border-top-left-radius: 0; border-top-right-radius: 0; border-top: none;
 }
 
 /* ===========================================================
@@ -286,7 +299,7 @@
 .schedule-card {
   position: relative; background: var(--surface);
   border: 1px solid var(--ui-border); border-radius: var(--radius-lg);
-  box-shadow: 0 2px 10px rgba(6,17,31,.035), 0 1px 2px rgba(6,17,31,.03);
+  box-shadow: 0 10px 28px rgba(6,17,31,.025);
   padding: 26px; --status-color: var(--neutral-status);
   transition: transform .18s var(--motion-standard), box-shadow .18s var(--motion-standard), border-color .18s var(--motion-standard);
   animation: cardIn .32s var(--motion-standard) backwards;
@@ -294,7 +307,7 @@
 }
 @keyframes cardIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .schedule-card { animation: none; } }
-.schedule-card:hover { transform: translateY(-2px); border-color: var(--ui-border); box-shadow: 0 6px 16px rgba(6,17,31,.06), 0 2px 4px rgba(6,17,31,.04); }
+.schedule-card:hover { transform: translateY(-2px); border-color: var(--ui-border); box-shadow: 0 14px 36px rgba(6,17,31,.05); }
 .schedule-card.status-live { --status-color: var(--live); }
 .schedule-card.status-final { --status-color: var(--success); }
 .schedule-card.status-final-pending,
@@ -313,19 +326,18 @@
 .sc-team { display: flex; align-items: center; gap: 16px; min-width: 0; }
 .sc-team.away { justify-content: flex-end; }
 .sc-team.home { justify-content: flex-start; }
-.sc-team img { width: 64px; height: 64px; object-fit: contain; flex-shrink: 0; transition: transform .15s var(--motion-standard); }
-.sc-team img:hover { transform: scale(1.04); }
-.sc-team-name { font-family: var(--font-ui); font-weight: 800; font-size: var(--fs-team); color: var(--text-navy); line-height: 1.15; }
+.sc-team img { width: 64px; height: 64px; object-fit: contain; flex-shrink: 0; }
+.sc-team-name { font-family: var(--font-ui); font-weight: 800; font-size: var(--fs-team); color: #000; line-height: 1.15; }
 .sc-team.loser .sc-team-name { color: var(--hub-text-muted); }
 
 .sc-center { text-align: center; min-width: 120px; }
 .sc-time {
-  font-family: var(--font-ui); font-weight: 800; font-size: var(--fs-time); color: var(--text-navy);
+  font-family: var(--font-ui); font-weight: 800; font-size: var(--fs-time); color: #000;
   line-height: 1.1; white-space: nowrap; font-variant-numeric: tabular-nums;
 }
 .sc-time.muted { color: var(--hub-text-muted); text-decoration: line-through; }
 .sc-score {
-  font-family: var(--font-display); font-weight: 900; font-size: var(--fs-score); color: var(--text-navy);
+  font-family: var(--font-heading); font-weight: 900; font-size: var(--fs-score); color: #000;
   line-height: 1; white-space: nowrap; font-variant-numeric: tabular-nums;
 }
 .sc-score .sc-sep { color: var(--ui-border); margin: 0 8px; }
@@ -352,6 +364,36 @@
 .sc-bcast img { height: 14px; width: auto; max-width: 74px; object-fit: contain; }
 .sc-bcast-show { color: var(--hub-text-muted); }
 .sc-actions { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+
+/* ===========================================================
+   Live featured card — same .schedule-card shell and the same
+   sc-vote-results / sc-bottom rows as the scheduled-game card; only
+   the matchup row is swapped for this compact centred composition,
+   with the score as the clear focal point.
+   =========================================================== */
+.sc-live-matchup { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 20px; }
+.sc-live-row { display: flex; align-items: center; justify-content: center; gap: 24px; }
+.sc-live-team { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.sc-live-logo { width: 72px; height: 72px; object-fit: contain; flex-shrink: 0; }
+.sc-live-team-name { font-family: var(--font-ui); font-weight: 800; font-size: 20px; color: #000; }
+.sc-live-center { text-align: center; padding: 0 4px; }
+.sc-live-score {
+  font-family: var(--font-heading); font-weight: 900; font-size: 58px; line-height: 1; color: #000;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.sc-live-score .sc-live-sep { color: var(--ui-border); margin: 0 6px; }
+.sc-live-score .win { color: var(--accent); }
+.sc-live-clock {
+  font-family: var(--font-ui); font-weight: 700; font-size: 12px;
+  letter-spacing: .04em; text-transform: uppercase; color: var(--hub-text-muted);
+}
+
+@media (max-width: 640px) {
+  .sc-live-matchup { gap: 14px; }
+  .sc-live-logo { width: 56px; height: 56px; }
+  .sc-live-team-name { font-size: 16px; }
+  .sc-live-score { font-size: 40px; }
+}
 
 /* ===========================================================
    Voting — two components, team color as a border/tint accent only,
@@ -403,7 +445,7 @@
 .results-team.winning { opacity: 1; }
 .results-team img { width: 22px; height: 22px; object-fit: contain; }
 .results-name { font-family: var(--font-ui); font-weight: 700; font-size: var(--fs-support); color: var(--text-navy); }
-.results-pct { font-family: var(--font-display); font-weight: 900; font-size: 20px; color: var(--text-navy); font-variant-numeric: tabular-nums; }
+.results-pct { font-family: var(--font-heading); font-weight: 900; font-size: 28px; color: var(--text-navy); font-variant-numeric: tabular-nums; }
 .results-bar { display: flex; height: 12px; border-radius: 999px; overflow: hidden; background: var(--ui-divider); }
 .results-fill { height: 100%; transition: width .5s var(--motion-smooth); }
 .results-fill.away { border-radius: 999px 0 0 999px; }
@@ -412,7 +454,7 @@
 /* Live games keep the score as the card's focal point — results read
    visually secondary, not competing for attention. */
 .sc-vote-results.is-secondary { opacity: .85; }
-.sc-vote-results.is-secondary .results-pct { font-size: 16px; }
+.sc-vote-results.is-secondary .results-pct { font-size: 24px; }
 
 /* ===========================================================
    Compact row — every game except the single next-upcoming one.
@@ -422,20 +464,21 @@
    (--fs-team/--fs-time) rather than a smaller compact-only scale.
    =========================================================== */
 .cc-row {
+  position: relative;
   display: flex; align-items: center; gap: 24px;
   padding: 18px 20px; background: var(--surface);
   border: 1px solid var(--ui-border); border-radius: var(--radius-lg);
-  box-shadow: 0 2px 10px rgba(6,17,31,.035), 0 1px 2px rgba(6,17,31,.03);
+  box-shadow: 0 10px 28px rgba(6,17,31,.025);
   transition: border-color .18s var(--motion-standard), box-shadow .18s var(--motion-standard);
   animation: cardIn .32s var(--motion-standard) backwards;
   animation-delay: calc(var(--stagger, 0) * 45ms);
 }
 @media (prefers-reduced-motion: reduce) { .cc-row { animation: none; } }
-.cc-row:hover { border-color: var(--ui-border); box-shadow: 0 6px 16px rgba(6,17,31,.06), 0 2px 4px rgba(6,17,31,.04); }
+.cc-row:hover { border-color: var(--ui-border); box-shadow: 0 14px 36px rgba(6,17,31,.05); }
 
 .cc-time { flex: 0 0 auto; display: flex; flex-direction: column; gap: 4px; min-width: 84px; }
 .cc-clock {
-  font-family: var(--font-ui); font-weight: 800; font-size: var(--fs-time); color: var(--text-navy);
+  font-family: var(--font-ui); font-weight: 800; font-size: var(--fs-time); color: #000;
   line-height: 1.1; white-space: nowrap; font-variant-numeric: tabular-nums;
 }
 .cc-clock.muted { color: var(--hub-text-muted); }
@@ -447,7 +490,7 @@
 .cc-team { display: flex; align-items: center; gap: 10px; }
 .cc-team img { width: 32px; height: 32px; object-fit: contain; flex-shrink: 0; }
 .cc-market { font-family: var(--font-ui); font-weight: 400; font-size: 14px; color: var(--hub-text-muted); }
-.cc-nick { font-family: var(--font-ui); font-weight: 800; font-size: calc(var(--fs-team) - 8px); color: var(--text-navy); }
+.cc-nick { font-family: var(--font-ui); font-weight: 800; font-size: calc(var(--fs-team) - 8px); color: #000; }
 .cc-team.loser .cc-nick { color: var(--hub-text-muted); }
 
 /* Fixed width, not flex-grown — every row's vote/results block is the
@@ -479,13 +522,83 @@
 }
 .cc-results { display: flex; flex-direction: column; gap: 6px; }
 .cc-results-labels { display: flex; justify-content: space-between; font-family: var(--font-ui); font-weight: 700; font-size: 13px; color: var(--text-navy); }
-.cc-results-labels strong { font-family: var(--font-display); font-weight: 900; font-variant-numeric: tabular-nums; }
+.cc-results-labels strong { font-family: var(--font-heading); font-weight: 900; font-variant-numeric: tabular-nums; }
 .cc-results-bar { display: flex; height: 8px; border-radius: 999px; overflow: hidden; background: var(--ui-divider); }
 .cc-results-fill { height: 100%; transition: width .5s var(--motion-smooth); }
 .cc-results-fill:first-child { border-radius: 999px 0 0 999px; }
 .cc-results-fill:last-child { border-radius: 0 999px 999px 0; }
 
 .cc-action { flex: 0 0 auto; }
+
+/* Vote confirmation animation — a broadcast-style "sweep in → VOTED
+   FOR {team} → hold → sweep out" sequence that takes over the whole
+   card (.schedule-card / .cc-row already carry the animation layer;
+   .vote-module just marks where the vote/results content itself
+   lives). The real results markup is swapped into .vote-module
+   immediately underneath the opaque animation layer — the swap itself
+   never paints — so revealing it is just the wipe's clip-path
+   animating away, with zero DOM replacement visible to the viewer.
+   The card's height is locked for the sequence's duration so nothing
+   below it on the page jumps. */
+.vote-module { position: relative; }
+
+.vote-anim-layer {
+  position: absolute; inset: 0; z-index: 5; overflow: hidden; border-radius: inherit;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #0a1f3d, #061428);
+  clip-path: inset(0 0 0 0);
+}
+.vote-anim-layer.wipe { transition: clip-path .48s cubic-bezier(.65, 0, .35, 1); clip-path: inset(0 100% 0 0); }
+
+.vote-anim-line {
+  position: absolute; right: -10%; height: 3px;
+  background: linear-gradient(90deg, transparent, var(--team-color, #fff) 55%, transparent);
+  border-radius: 999px; opacity: 0; transform: translateX(120%);
+}
+.vote-anim-line.play { animation: voteLineSweep .38s cubic-bezier(.22, 1, .36, 1) forwards; }
+@keyframes voteLineSweep {
+  0% { transform: translateX(120%); opacity: 0; }
+  18% { opacity: 1; }
+  100% { transform: translateX(-260%); opacity: 0; }
+}
+
+.vote-anim-wipe-line {
+  position: absolute; top: 0; bottom: 0; right: -4px; width: 3px;
+  background: var(--team-color, #fff); box-shadow: 0 0 14px 1px var(--team-color, #fff);
+  opacity: 0;
+}
+.vote-anim-wipe-line.play { opacity: 1; transition: transform .48s cubic-bezier(.65, 0, .35, 1); transform: translateX(-4000%); }
+
+.vote-anim-content { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.vote-anim-label {
+  font-family: var(--font-ui); font-weight: 700; font-size: 12px; letter-spacing: .12em;
+  text-transform: uppercase; color: rgba(255, 255, 255, .7);
+  opacity: 0; transform: translateY(4px);
+  transition: opacity .24s ease, transform .24s ease;
+}
+.vote-anim-label.in { opacity: 1; transform: translateY(0); }
+.vote-anim-team {
+  display: flex; align-items: center; gap: 10px;
+  opacity: 0; transform: translateX(10px) scale(.88);
+  transition: opacity .32s cubic-bezier(.22, 1, .36, 1), transform .32s cubic-bezier(.22, 1, .36, 1);
+}
+.vote-anim-team.in { opacity: 1; transform: translateX(0) scale(1); }
+.vote-anim-logo { width: 48px; height: 48px; object-fit: contain; }
+.vote-anim-name { font-family: var(--font-heading); font-weight: 900; font-size: 24px; color: #fff; }
+
+/* The featured card's overlay covers a much larger area — scale the
+   confirmation up to match instead of leaving it sized for a compact
+   row's ~112px height. */
+.vote-anim-layer.is-featured .vote-anim-content { gap: 10px; }
+.vote-anim-layer.is-featured .vote-anim-label { font-size: 14px; }
+.vote-anim-layer.is-featured .vote-anim-logo { width: 72px; height: 72px; }
+.vote-anim-layer.is-featured .vote-anim-name { font-size: 36px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .vote-anim-layer { transition: opacity .18s ease; }
+  .vote-anim-layer.wipe { clip-path: inset(0 0 0 0); opacity: 0; }
+  .vote-anim-line, .vote-anim-wipe-line, .vote-anim-label, .vote-anim-team { display: none; }
+}
 
 /* Primary + secondary actions */
 .btn {
@@ -502,6 +615,7 @@
 .btn-added { background: var(--tag-green); border-color: var(--tag-green); color: var(--tag-green-text); animation: addedPop .3s var(--motion-standard); }
 @keyframes addedPop { 0% { transform: scale(1); } 40% { transform: scale(1.04); } 100% { transform: scale(1); } }
 .btn .btn-icon { width: 16px; height: 16px; flex-shrink: 0; }
+.btn-bcast-logo { height: 16px; width: auto; max-width: 60px; object-fit: contain; flex-shrink: 0; margin-left: 6px; }
 
 /* ===========================================================
    §8 Full Season — compact scan rows, grouped by week

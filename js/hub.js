@@ -117,7 +117,7 @@ function renderWeekView() {
     return;
   }
   const groups = groupGamesByDate(games);
-  const featuredId = getNextUpcomingGame()?.id;
+  const featuredId = getFeaturedGame()?.id;
   root.innerHTML = `<div class="view-fade">${groups.map((grp) => `
     <div class="date-group">
       <div class="date-heading">
@@ -168,6 +168,12 @@ function setView(view) {
 
 document.addEventListener("DOMContentLoaded", () => {
   const params = new URLSearchParams(location.search);
+  // ?resetVotes=1 clears every locally-stored vote before the first
+  // render — a manual convenience for testing showcase mode, not a
+  // feature end users would ever hit on their own.
+  if (params.get("resetVotes") === "1") {
+    Object.keys(localStorage).filter((k) => k.startsWith("huddle.vote.")).forEach((k) => localStorage.removeItem(k));
+  }
   const deepLinkWeek = Number(params.get("week"));
   if (deepLinkWeek >= 1 && deepLinkWeek <= 18) {
     currentWeek = deepLinkWeek;
