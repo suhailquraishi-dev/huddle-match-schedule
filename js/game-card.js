@@ -106,7 +106,6 @@ function viewGameButton(game) {
    is missing the markup falls back to the network's name, so the card
    never renders a broken image. */
 const BROADCASTERS = {
-  "abc/espn": { name: "ABC / ESPN", file: "espn" },
   espn: { name: "ESPN", file: "espn" },
   abc: { name: "ABC", file: "abc" },
   cbs: { name: "CBS", file: "cbs" },
@@ -116,17 +115,22 @@ const BROADCASTERS = {
   "prime video": { name: "Prime Video", file: "prime-video" },
 };
 
+/* A broadcast string can name more than one network for the same game
+   (simulcasts like "ABC/ESPN · Monday Night Football") — every network
+   named gets its own logo, looped through in order, sharing one
+   showcase suffix. Falls back to the plain broadcast text if any named
+   network isn't in BROADCASTERS, so nothing renders half-blank. */
 function broadcastHtml(broadcast) {
   if (!broadcast) return "";
-  const [network, ...rest] = broadcast.split("·").map((s) => s.trim());
-  const b = BROADCASTERS[network.toLowerCase()];
+  const [networksPart, ...rest] = broadcast.split("·").map((s) => s.trim());
   const show = rest.join(" · ");
-  if (!b) return `<span class="sc-bcast">${broadcast}</span>`;
-  return `<span class="sc-bcast">
-      <img src="assets/broadcasters/${b.file}.svg" alt="${b.name}" onerror="this.hidden=true;this.nextElementSibling.hidden=false">
-      <span hidden>${b.name}</span>
-      ${show ? `<span class="sc-bcast-show">${show}</span>` : ""}
-    </span>`;
+  const networks = networksPart.split("/").map((s) => s.trim());
+  const matched = networks.map((n) => BROADCASTERS[n.toLowerCase()]);
+  if (matched.some((b) => !b)) return `<span class="sc-bcast">${broadcast}</span>`;
+  const logos = matched.map((b) =>
+    `<img src="assets/broadcasters/${b.file}.svg" alt="${b.name}" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span hidden>${b.name}</span>`
+  ).join("");
+  return `<span class="sc-bcast">${logos}${show ? `<span class="sc-bcast-show">${show}</span>` : ""}</span>`;
 }
 
 /* --- Voting ---------------------------------------------------------
@@ -141,7 +145,7 @@ function votingPanel(game) {
   const away = getTeam(game.away.abbr), home = getTeam(game.home.abbr);
   return `
     <div class="sc-vote-panel">
-      <div class="vote-heading">Who Wins?</div>
+      <div class="vote-heading">Make Your Pick</div>
       <div class="vote-options">
         <button type="button" class="vote-option" data-side="away" style="--team-color:${away.color};" onclick="handleVoteClick('${game.id}','away')">
           <img src="${away.logo}" alt="">
@@ -274,10 +278,17 @@ function teamSide(abbr, side, winner) {
    a different, denser layout, not just a scaled-down copy. */
 function renderScheduleCard(game, i = 0, featured = false) {
   if (!featured) return renderCompactRow(game, i);
-  const locked = isVotingLocked(game);
+  /* SHOWCASE MODE: voting stays open regardless of kickoff/game state —
+     every card shows the vote options by default, and switches to
+     results only once *this browser* has actually voted on it. Revert
+     to the commented lines to restore normal lock-after-kickoff
+     behavior (results shown for any locked/decided game, voted or not). */
   const userVote = getUserVote(game.id);
-  const canVote = game.status === "scheduled" && !locked && !userVote;
-  const showResults = game.status !== "cancelled" && (game.status !== "scheduled" || locked || !!userVote);
+  const canVote = game.status !== "cancelled" && !userVote;
+  const showResults = game.status !== "cancelled" && !!userVote;
+  // const locked = isVotingLocked(game);
+  // const canVote = game.status === "scheduled" && !locked && !userVote;
+  // const showResults = game.status !== "cancelled" && (game.status !== "scheduled" || locked || !!userVote);
   const actions = cardActions(game);
   const place = [game.venue, game.city].filter(Boolean).join(" · ");
   const banner = isTomorrow(game.scheduledAt) && game.status === "scheduled"
@@ -338,7 +349,6 @@ function compactVoteChoice(game) {
   const away = getTeam(game.away.abbr), home = getTeam(game.home.abbr);
   return `
     <div class="cc-vote">
-      <div class="cc-vote-label">Who Wins?</div>
       <div class="cc-vote-choice">
         <button type="button" class="cc-vote-side" data-side="away" onclick="handleVoteClick('${game.id}','away')"><img src="${away.logo}" alt="">${away.short}</button>
         <span class="cc-vote-sep">vs</span>
@@ -361,10 +371,13 @@ function compactResults(game) {
 }
 
 function renderCompactRow(game, i = 0) {
-  const locked = isVotingLocked(game);
+  /* SHOWCASE MODE — see the matching note in renderScheduleCard(). */
   const userVote = getUserVote(game.id);
-  const canVote = game.status === "scheduled" && !locked && !userVote;
-  const showVote = game.status !== "cancelled" && (game.status !== "scheduled" || locked || !!userVote);
+  const canVote = game.status !== "cancelled" && !userVote;
+  const showVote = game.status !== "cancelled" && !!userVote;
+  // const locked = isVotingLocked(game);
+  // const canVote = game.status === "scheduled" && !locked && !userVote;
+  // const showVote = game.status !== "cancelled" && (game.status !== "scheduled" || locked || !!userVote);
   const actions = cardActions(game);
   const banner = isTomorrow(game.scheduledAt) && game.status === "scheduled"
     ? `<div class="sc-happening-banner">Happening Tomorrow</div>` : "";
@@ -492,7 +505,8 @@ function renderGameCard(game) {
    The vote itself commits (and locks) only at that second step. */
 function handleVoteClick(gameId, side) {
   const game = getGameById(gameId);
-  if (!game || isVotingLocked(game) || getUserVote(gameId)) return;
+  // SHOWCASE MODE — voting stays open regardless of lock state; see castVote().
+  if (!game || game.status === "cancelled" || getUserVote(gameId)) return;
   document.querySelectorAll(`[data-game-id="${gameId}"] .vote-option, [data-game-id="${gameId}"] .cc-vote-side`).forEach((opt) => {
     const picked = opt.dataset.side === side;
     opt.classList.toggle("selected", picked);
@@ -504,12 +518,18 @@ function handleVoteClick(gameId, side) {
     if (!castVote(gameId, side)) return;
     const updated = getGameById(gameId);
     document.querySelectorAll(`[data-game-id="${gameId}"]`).forEach((el) => {
+      /* renderScheduleCard()/renderCompactRow() wrap their own output in
+         a .schedule-card-group when a "Happening Tomorrow" banner
+         applies. If this card is already inside that wrapper, the new
+         (also-wrapped) markup has to replace the wrapper itself, or a
+         second nested wrapper+banner ends up stacked on top of it. */
+      const group = el.parentElement?.classList.contains("schedule-card-group") ? el.parentElement : null;
       if (el.classList.contains("schedule-card")) {
         const i = parseInt(el.style.getPropertyValue("--stagger"), 10) || 0;
-        el.outerHTML = renderScheduleCard(updated, i, true);
+        (group || el).outerHTML = renderScheduleCard(updated, i, true);
       } else if (el.classList.contains("cc-row")) {
         const i = parseInt(el.style.getPropertyValue("--stagger"), 10) || 0;
-        el.outerHTML = renderCompactRow(updated, i);
+        (group || el).outerHTML = renderCompactRow(updated, i);
       } else if (el.classList.contains("schedule-row")) el.outerHTML = renderScheduleRow(updated);
       else el.outerHTML = renderGameCard(updated);
     });

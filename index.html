@@ -7,8 +7,8 @@
 <link rel="icon" href="assets/logos/favicon-es.ico">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700;800;900&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/tokens.css?v=1789032729">
-<link rel="stylesheet" href="css/styles.css?v=1789032729">
+<link rel="stylesheet" href="css/tokens.css?v=1789096485">
+<link rel="stylesheet" href="css/styles.css?v=1789096485">
 </head>
 <body>
 
@@ -167,11 +167,14 @@
   </picture>
 </div>
 
-<main class="page">
-  <!-- One consolidated, sticky toolbar: view switch (left) · week nav
-       (centre) · team filter + timezone (right) — replaces the earlier
-       stack of hub-header / view-toggle / week-nav as separate rows. -->
-  <div class="hub-toolbar">
+<!-- One consolidated, sticky toolbar: view switch (left) · week nav
+     (centre) · team filter + timezone (right). A sibling of .page (not
+     nested inside it) so its background can span the full viewport
+     width like the navbar above it — but the controls inside still
+     line up with .page's own 1240px column via .hub-toolbar-inner,
+     same horizontal position they've always had. -->
+<div class="hub-toolbar">
+  <div class="hub-toolbar-inner">
     <div class="view-toggle">
       <button data-view="week" class="active">Week View</button>
       <button data-view="season">Full Season</button>
@@ -189,7 +192,9 @@
       </select>
     </div>
   </div>
+</div>
 
+<main class="page">
   <div id="scheduleRoot"></div>
 </main>
 
@@ -290,11 +295,11 @@
   </div>
 </div>
 
-<script src="js/data.js?v=1789032729"></script>
-<script src="js/voting.js?v=1789032729"></script>
-<script src="js/analytics.js?v=1789032729"></script>
-<script src="js/game-card.js?v=1789032729"></script>
-<script src="js/common.js?v=1789032729"></script>
-<script src="js/hub.js?v=1789032729"></script>
+<script src="js/data.js?v=1789096485"></script>
+<script src="js/voting.js?v=1789096485"></script>
+<script src="js/analytics.js?v=1789096485"></script>
+<script src="js/game-card.js?v=1789096485"></script>
+<script src="js/common.js?v=1789096485"></script>
+<script src="js/hub.js?v=1789096485"></script>
 </body>
 </html>

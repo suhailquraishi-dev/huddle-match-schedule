@@ -39,9 +39,15 @@ function getVotePercentages(game) {
   return { homePct: Math.round((home / total) * 100), awayPct: Math.round((away / total) * 100) };
 }
 
+/* SHOWCASE MODE: voting stays open regardless of kickoff/game state (the
+   normal `isVotingLocked(game)` gate is skipped below) so every card can
+   demo the vote → results flow. Still one vote per game per browser, and
+   still refuses on a cancelled game. Restore the commented check to go
+   back to normal "closes at kickoff" behavior. */
 function castVote(gameId, side) {
   const game = getGameById(gameId);
-  if (!game || isVotingLocked(game) || getUserVote(gameId)) return false;
+  if (!game || game.status === "cancelled" || getUserVote(gameId)) return false;
+  // if (!game || isVotingLocked(game) || getUserVote(gameId)) return false;
   setUserVote(gameId, side);
   track("vote_submitted", { game_id: gameId, side, week: game.week });
   return true;

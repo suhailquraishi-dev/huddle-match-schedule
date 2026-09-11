@@ -174,10 +174,19 @@
 
 /* §6/§7 Consolidated toolbar — view switch (left), week navigation
    (centre), team filter + timezone note (right), all in one sticky row. */
+/* A sibling of .page in the markup (not nested inside it), so it's
+   naturally full-width like the navbar above it — no vw/negative-margin
+   breakout hack needed, and no scrollbar-width edge case to fight.
+   Side padding matches the navbar's own 22px. */
 .hub-toolbar {
-  display: flex; align-items: center; gap: 16px; margin-bottom: 28px;
-  padding: 10px 0; background: var(--canvas);
+  margin-top: 32px; background: var(--canvas);
   position: sticky; top: 69px; z-index: 50;
+}
+/* The controls stay aligned with .page's own 1240px column — only the
+   bar's background/sticky behavior is full-bleed, not the content. */
+.hub-toolbar-inner {
+  display: flex; align-items: center; gap: 16px;
+  max-width: 1240px; margin: 0 auto; padding: 10px 20px;
 }
 .toolbar-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
 
@@ -300,7 +309,7 @@
    two labels pinned to the outer edges. Away is name-then-logo and home
    is logo-then-name, so on each side the logo — the biggest, most
    identifiable element — sits nearest the score. */
-.sc-main { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 20px; }
+.sc-main { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 40px; margin-top: 14px; }
 .sc-team { display: flex; align-items: center; gap: 16px; min-width: 0; }
 .sc-team.away { justify-content: flex-end; }
 .sc-team.home { justify-content: flex-start; }
@@ -351,9 +360,9 @@
      .sc-vote-results — closed / after voting — a percentage bar
        attached to each team, with animated fill + count-up (game-card.js)
    =========================================================== */
-.sc-vote-panel { margin-top: 20px; }
+.sc-vote-panel { margin: 20px auto 0; max-width: 100%; }
 .vote-heading {
-  font-family: var(--font-ui); font-weight: 800; font-size: var(--fs-label); letter-spacing: .08em;
+  font-family: var(--font-ui); font-weight: 600; font-size: var(--fs-label); letter-spacing: .08em;
   text-transform: uppercase; color: var(--hub-text-muted); margin-bottom: 10px; text-align: center;
 }
 .vote-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -384,7 +393,7 @@
 .vote-option.selected .vote-indicator svg { width: 10px; height: 8px; }
 .vote-option.unselected { opacity: .55; }
 
-.sc-vote-results { margin-top: 20px; }
+.sc-vote-results { margin: 20px auto 0; max-width: 100%; }
 .vote-summary { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-top: 10px; }
 .vote-summary.no-pick { justify-content: center; }
 .vote-pick { font-family: var(--font-ui); font-weight: 400; font-size: var(--fs-meta); color: var(--hub-text-muted); }
@@ -438,7 +447,7 @@
 .cc-team { display: flex; align-items: center; gap: 10px; }
 .cc-team img { width: 32px; height: 32px; object-fit: contain; flex-shrink: 0; }
 .cc-market { font-family: var(--font-ui); font-weight: 400; font-size: 14px; color: var(--hub-text-muted); }
-.cc-nick { font-family: var(--font-ui); font-weight: 800; font-size: var(--fs-team); color: var(--text-navy); }
+.cc-nick { font-family: var(--font-ui); font-weight: 800; font-size: calc(var(--fs-team) - 8px); color: var(--text-navy); }
 .cc-team.loser .cc-nick { color: var(--hub-text-muted); }
 
 /* Fixed width, not flex-grown — every row's vote/results block is the
@@ -450,10 +459,6 @@
 .cc-vote-slot { flex: 1 1 auto; display: flex; justify-content: flex-end; min-width: 0; }
 .cc-vote, .cc-results { flex: 0 0 320px; width: 320px; }
 .cc-vote { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
-.cc-vote-label {
-  font-family: var(--font-ui); font-weight: 800; font-size: var(--fs-label); letter-spacing: .08em;
-  text-transform: uppercase; color: var(--hub-text-muted);
-}
 .cc-vote-choice {
   display: flex; align-items: center; width: 100%;
   border: 1.5px solid var(--ui-border); border-radius: var(--button-radius); overflow: hidden;
@@ -481,7 +486,6 @@
 .cc-results-fill:last-child { border-radius: 0 999px 999px 0; }
 
 .cc-action { flex: 0 0 auto; }
-.cc-action .btn { min-height: 40px; font-size: 13px; padding: 0 14px; }
 
 /* Primary + secondary actions */
 .btn {
@@ -540,7 +544,7 @@
 @media (max-width: 768px) {
   /* Toolbar stacks: view switch, then week nav, then filter + timezone —
      each full width instead of squeezed into one row. */
-  .hub-toolbar { flex-direction: column; align-items: stretch; gap: 12px; }
+  .hub-toolbar-inner { flex-direction: column; align-items: stretch; gap: 12px; }
   .view-toggle { align-self: center; }
   .week-nav { width: 100%; }
   .toolbar-right { width: 100%; justify-content: center; }
